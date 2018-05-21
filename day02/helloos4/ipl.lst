@@ -1,0 +1,75 @@
+     1                                  ; http://tsurugidake.hatenablog.jp/entry/2017/08/15/202414
+     2                                  ; hello-os
+     3                                  ; TAB=4
+     4                                  
+     5                                          ORG     0x7c00          ; このプログラムがメモリ上のどこによみこまれるのか
+     6                                  
+     7                                  ; ディスクのための記述
+     8 00000000 EB4E                            JMP     entry           ; BS_JmpBoot        0         : jump to bootstrap program
+     9 00000002 90                              DB      0x90            ; BS_JmpBoot                1
+    10 00000003 48454C4C4F49504C                DB      "HELLOIPL"      ; BS_OEMName        3       8
+    11 0000000B 0002                            DW      512             ; BPB_BytsPerSec    11      2 : バイト単位のセクタ サイズ
+    12 0000000D 01                              DB      1               ; BPB_SecPerClus    13      1 : アロケーション ユニット(<-クラスタ)(割り当て単位)当たりのセクタ数
+    13 0000000E 0100                            DW      1               ; BPB_RsvdSecCnt    14      2 : 予約領域のセクタ数 (少なくともこのBPBを含むブートセクタそれ自身が存在するため、0であってはならない)
+    14 00000010 02                              DB      2               ; BPB_NumFATs       16      1 : FATの個数 (このフィールドの値は常に2に設定すべきである)
+    15 00000011 E000                            DW      224             ; BPB_RootEntCnt    17      2 : ルートディレクトリに含まれるディレクトリエントリの数を示す
+    16 00000013 400B                            DW      2880            ; BPB_TotSec16      19      2 : ボリュームの総セクタ数(古い16ビット フィールド)
+    17 00000015 F0                              DB      0xf0            ; BPB_Media         21      1 : メディアタイプ(区画分けされた固定ディスク ドライブでは0xF8が標準値である。区画分けされないリムーバブル 
+    18 00000016 0900                            DW      9               ; BPB_FATSz16       22      2 : 1個のFATが占めるセクタ数
+    19 00000018 1200                            DW      18              ; BPB_SecPerTrk     24      2 : トラック当たりのセクタ数
+    20 0000001A 0200                            DW      2               ; BPB_NumHeads      26      2 : ヘッドの数
+    21 0000001C 00000000                        DD      0               ; BPB_HiddSec       28      4 : ストレージ上でこのボリュームの手前に存在する隠れた物理セクタの数(ボリュームがストレージの先頭から始ま
+    22 00000020 400B0000                        DD      2880            ; BPB_TotSec32      32      4 : ボリュームの総セクタ数(新しい32ビット フィールド)
+    23                                  
+    24                                  
+    25                                  ; FAT12/16におけるオフセット36以降のフィールド
+    26                                          ;DB      0, 0, 0x29      ; 以下の３行に分けて記述
+    27 00000024 00                              DB      0x00            ; BS_DrvNum         36      1
+    28 00000025 00                              DB      0x00            ; BS_Reserved1      37      1
+    29 00000026 29                              DB      0x29            ; BS_BootSig        38      1
+    30                                  
+    31 00000027 FFFFFFFF                        DD      0xffffffff      ; BS_VolID          39      4 : ボリュームシリアル番号
+    32 0000002B 48454C4C4F2D4F5320-             DB      "HELLO-OS   "   ; BS_VolLab         43      11 : ディスクの名前(ルート ディレクトリに記録される11バイトのボリューム ラベルに一致する)
+    33 00000034 2020               
+    34 00000036 4641543132202020                DB      "FAT12   "      ; BS_FilSysType     54      8 : フォーマットの名前
+    35 0000003E <res 00000012>                  RESB    18              ; とりあえず18バイト開けておく
+    36          ******************       warning: uninitialized space declared in .text section: zeroing
+    37                                  
+    38                                  ; START BS_BootCode                                 64      448
+    39                                  ; (ブートストラップ プログラム。システム依存フィールドで、未使用時はゼロで埋める。)
+    40                                  entry:
+    41 00000050 B80000                          MOV     AX, 0            ; レジスタの初期化
+    42 00000053 8ED0                            MOV     SS, AX
+    43 00000055 BC007C                          MOV     SP, 0x7c00
+    44 00000058 8ED8                            MOV     DS, AX
+    45 0000005A 8EC0                            MOV     ES, AX
+    46                                  
+    47 0000005C BE[7400]                        MOV     SI, msg
+    48                                  putloop:
+    49 0000005F 8A04                            MOV     AL, [SI]        ; BYTE (accumulator low)
+    50 00000061 83C601                          ADD     SI, 1           ; increment
+    51 00000064 3C00                            CMP     AL, 0           ; compare (<end msg>)
+    52 00000066 7409                            JE      fin             ; jump to fin if equal to 0
+    53 00000068 B40E                            MOV     AH, 0x0e        ; AH = 0x0e
+    54 0000006A BB0F00                          MOV     BX, 15          ; BH = 0, BL = <color code>
+    55 0000006D CD10                            INT     0x10            ; interrupt BIOS
+    56 0000006F EBEE                            JMP     putloop
+    57                                  fin:
+    58 00000071 F4                              HLT
+    59 00000072 EBFD                            JMP     fin
+    60                                  
+    61                                  msg:
+    62 00000074 0A0A                            DB      0x0a, 0x0a
+    63 00000076 68656C6C6F2C20776F-             DB      "hello, world"
+    64 0000007F 726C64             
+    65 00000082 0A                              DB      0x0a
+    66 00000083 00                              DB      0               ; end msg
+    67                                  
+    68                                          ;RESB    0x7dfe-($-$$)  ; これだとエラーが出た。。。
+    69 00000084 <res 0000017A>                  RESB    0x7dfe-0x7c00-($-$$)    ; 現在の場所から0x1fdまで(残りの未使用領域)を0で埋める。
+    70          ******************       warning: uninitialized space declared in .text section: zeroing
+    71                                  ; END BS_BootCode
+    72                                  
+    73 000001FE 55AA                            DB      0x55, 0xaa      ; BS_BootSign       510     2 : 以下の記述と同様
+    74                                          ;DW      0xAA55
+    75                                  

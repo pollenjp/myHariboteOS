@@ -1,0 +1,113 @@
+     1                                  ; haribote-ipl
+     2                                  ; TAB=4
+     3                                          ORG     0x7c00          ; read start
+     4                                  
+     5                                  ; discription for floppy disk
+     6 00000000 EB4E                            JMP     entry           ; BS_JmpBoot
+     7 00000002 90                              DB      0x90            ; BS_JmpBoot
+     8 00000003 48415249424F5445                DB      "HARIBOTE"      ; BS_OEMName    8B
+     9 0000000B 0002                            DW      512             ; BPB_BytsPerSec
+    10 0000000D 01                              DB      1               ; BPB_SecPerClu
+    11 0000000E 0100                            DW      1               ; BPB_RevdSecCnt    : このBPBを含むブートセクタのみ
+    12 00000010 02                              DB      2               ; BPB_NumFATs       : FATの個数 (このフィールドの値は常に2に設定すべきである)
+    13 00000011 E000                            DW      224             ; BPB_RootEntCnt
+    14 00000013 400B                            DW      2880            ; BPB_TotSec16
+    15 00000015 F0                              DB      0xf0            ; BPB_Media
+    16 00000016 0900                            DW      9               ; BPB_FATSz16
+    17 00000018 1200                            DW      18              ; BPB_SecPerTrk
+    18 0000001A 0200                            DW      2               ; BPB_NumHeads
+    19 0000001C 00000000                        DD      0               ; BPB_HiddSec
+    20 00000020 400B0000                        DD      2880            ; BPB_TotSec32
+    21                                  
+    22                                          ; FAT12/16におけるオフセット36以降のフィールド
+    23 00000024 00                              DB      0x00            ; BS_DrvNum
+    24 00000025 00                              DB      0x00            ; BS_Reserved1
+    25 00000026 29                              DB      0x29            ; BS_BootSig
+    26                                  
+    27 00000027 FFFFFFFF                        DD      0xffffffff      ; BS_VolID
+    28 0000002B 48415249424F54454F-             DB      "HARIBOTEOS "   ; BS_VolLab     11B
+    29 00000034 5320               
+    30 00000036 4641543132202020                DB      "FAT12   "      ; BS_FilSysType 8B
+    31 0000003E <res 00000012>                  RESB    18              ; とりあえず18バイト開けておく
+    32          ******************       warning: uninitialized space declared in .text section: zeroing
+    33                                  
+    34                                  
+    35                                  ; START BS_BootCode 64(0x14)   448(0x1C0)
+    36                                  entry:
+    37 00000050 B80000                          MOV     AX, 0           ; initialize Accumulator(resister)
+    38 00000053 8ED0                            MOV     SS, AX          ; Stack Segment
+    39 00000055 BC007C                          MOV     SP, 0x7c00      ; Stack Pointer
+    40 00000058 8ED8                            MOV     DS, AX          ; Data Segment      : 番地指定のとき重要
+    41                                  
+    42                                          ;MOV     SI, msg         ; Source Index
+    43                                  
+    44                                  ; load disk
+    45 0000005A B82008                          MOV     AX, 0x0820
+    46 0000005D 8EC0                            MOV     ES, AX          ; extra segment :  buffer address       0x0820
+    47 0000005F B500                            MOV     CH, 0           ; counter high  : cylinder  0
+    48 00000061 B600                            MOV     DH, 0           ; data high     : head      0
+    49 00000063 B102                            MOV     CL, 2           ; counter low   : sector    2
+    50                                  
+    51                                  readloop:
+    52 00000065 BE0000                          MOV     SI, 0           ; 失敗回数を数えるレジスタ
+    53                                  
+    54                                  retry:
+    55 00000068 B402                            MOV     AH, 0x02        ; acumulator high   : 0x02 - read disk
+    56 0000006A B001                            MOV     AL, 1           ; acumulator low    : sector    1
+    57 0000006C BB0000                          MOV     BX, 0           ; buffer address    0x0000
+    58                                                                  ; ES:BX, ESは代入済み
+    59 0000006F B200                            MOV     DL, 0x00        ; data low          : drive number
+    60 00000071 CD13                            INT     0x13            ; BIOS call
+    61 00000073 7310                            JNC     next            ; jump if not carry
+    62                                  
+    63 00000075 83C601                          ADD     SI, 1           ; increment SI
+    64 00000078 83FE05                          CMP     SI, 5
+    65 0000007B 731A                            JAE     error           ; SI >= 5 then jump to error
+    66                                  
+    67 0000007D B400                            MOV     AH, 0x00        ; 0x00 - reset
+    68 0000007F B200                            MOV     DL, 0x00        ; A drive
+    69 00000081 CD13                            INT     0x13            ; reset drive
+    70 00000083 EBE3                            JMP     retry
+    71                                  
+    72                                  next:
+    73                                          ; add 0x20 to ES
+    74                                          ; 代わりにBXに512を足してもよい
+    75 00000085 8CC0                            MOV     AX, ES          ; 0x20だけアドレスを進める
+    76 00000087 83C020                          ADD     AX, 0x0020      ; 512 / 16 = 0x20
+    77 0000008A 8EC0                            MOV     ES, AX
+    78                                          ; increment CL (sector number)
+    79 0000008C 80C101                          ADD     CL, 1
+    80 0000008F 80F912                          CMP     CL, 18
+    81 00000092 76D1                            JBE     readloop
+    82                                  
+    83                                  fin:
+    84 00000094 F4                              HLT
+    85 00000095 EBFD                            JMP     fin             ; 無限ループ
+    86                                  
+    87                                  error:
+    88 00000097 BE[AC00]                        MOV     SI, msg
+    89                                  
+    90                                  putloop:
+    91 0000009A 8A04                            MOV     AL, [SI]        ; BYTE (accumulator low)
+    92 0000009C 83C601                          ADD     SI, 1           ; increment
+    93 0000009F 3C00                            CMP     AL, 0           ; 終了条件
+    94 000000A1 74F1                            JE      fin             ; jump to fin if equal to 0
+    95                                  
+    96 000000A3 B40E                            MOV     AH, 0x0e        ; 1 char-function
+    97 000000A5 BB0F00                          MOV     BX, 15          ; color code
+    98 000000A8 CD10                            INT     0x10            ; interrupt, call BIOS
+    99 000000AA EBEE                            JMP     putloop
+   100                                  
+   101                                  msg:
+   102 000000AC 0A0A                            DB      0x0a, 0x0a
+   103 000000AE 6C6F6164206572726F-             DB      "load error"
+   104 000000B7 72                 
+   105 000000B8 0A                              DB      0x0a
+   106 000000B9 00                              DB      0               ; end point
+   107                                  
+   108 000000BA <res 00000144>                  RESB    0x7dfe-0x7c00-($-$$)    ; 現在の場所から0x1fdまで(残りの未使用領域)を0で埋める。
+   109          ******************       warning: uninitialized space declared in .text section: zeroing
+   110                                                                          ; 0x7c00スタートなのでその分を引いている
+   111                                  ; END BS_BootCode
+   112                                  
+   113 000001FE 55AA                            DB      0x55, 0xaa      ; BS_BootSign, boot signature

@@ -1,0 +1,12 @@
+     1                                  ; haribote-os
+     2                                  ; TAB=4
+     3                                          ORG     0xc200      ; 0xc200 <- 0x8000 + 0x4200
+     4                                                              ; Where on memory this program will be loaded
+     5                                  
+     6 00000000 B013                            MOV     AL, 0x13    ; VGA graphics, 320x200x8bit
+     7 00000002 B400                            MOV     AH, 0x00
+     8 00000004 CD10                            INT     0x10
+     9                                  
+    10                                  fin:
+    11 00000006 F4                              HLT
+    12 00000007 EBFD                            JMP     fin

@@ -1,0 +1,16 @@
+     1                                  ; nasmfunc
+     2                                  ; TAB=4
+     3                                  
+     4                                  section .text
+     5                                          GLOBAL  io_hlt
+     6                                          GLOBAL  write_mem8;
+     7                                  
+     8                                  io_hlt:             ; void io_hlt(void);
+     9 00000000 F4                              HLT
+    10 00000001 C3                              RET
+    11                                  
+    12                                  write_mem8:         ; void write_mem8(int addr, int data);
+    13 00000002 8B4C2404                        MOV     ECX, [ESP+4]        ; [ESP+4]にaddrが入っているのでそれをECXに読み込む
+    14 00000006 8A442408                        MOV     AL, [ESP+8]         ; [ESP+8]にdataが入ってのでそれをALに読み込む
+    15 0000000A 8801                            MOV     [ECX], AL
+    16 0000000C C3                              RET

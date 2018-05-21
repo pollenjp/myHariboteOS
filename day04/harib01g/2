@@ -1,0 +1,43 @@
+; nasmfunc.asm
+; TAB=4
+
+section .text
+        GLOBAL  io_hlt
+        GLOBAL  write_mem8;
+
+io_hlt:             ; void io_hlt(void);
+        HLT
+        RET
+
+io_cli:     ; void io_cli(void);
+        cli
+        ret
+
+io_sti:     ; void io_sti(void);
+        sti
+        ret
+
+io_stihlt:      ; void io_stihlt(void);
+        sti
+        hlt
+        ret
+
+io_in8:     ; int io_in8(int port);
+        mov     edx, [esp + 4]      ; port
+        mov     eax, 0
+        in      al, dx
+        ret
+
+io_in16:        ; int io_in16(int port);
+        mov     edx, [esp + 4]      ; port
+        mov     eax, 0
+        in      ax, dx
+        ret
+
+in_in32:        ; int io_in16(int port);
+        mov     edx, [esp + 4]      ; port
+        in      eax, dx
+        ret
+
+io_out8:        ; void io_to_in_out32
+
