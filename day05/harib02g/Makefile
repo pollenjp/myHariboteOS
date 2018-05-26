@@ -1,0 +1,69 @@
+# Makefile
+
+CC = gcc
+CFLAGS = -c -m32 -march=i486 -nostdlib
+
+
+###########################
+
+all :
+	make img
+
+TMPFILE = ipl10.asm
+$(TMPFILE:%.asm=%.bin) : $(TMPFILE)
+	nasm $< -o $@ -l $(TMPFILE:%.asm=%.lst)
+
+asmhead.bin : asmhead.asm
+	nasm asmhead.asm -o asmhead.bin -l asmhead.lst
+
+nasmfunc.o : nasmfunc.asm Makefile
+	nasm -f elf nasmfunc.asm -o nasmfunc.o -l asmfunc.lst
+
+hankaku.o : hankaku.c
+	$(CC) $(CFLAGS) hankaku.c -o hankaku.o
+
+bootpack.o : bootpack.c
+	$(CC) $(CFLAGS) bootpack.c -o bootpack.o
+
+mysprintf.o : mysprintf.c
+	$(CC) $(CFLAGS) -nostdlib $^ -o $@
+
+bootpack.hrb : bootpack.c hankaku.o nasmfunc.o mysprintf.o har.ld
+	$(CC) -m32 -march=i486 -nostdlib -nostdinc -T har.ld bootpack.c hankaku.o nasmfunc.o mysprintf.o -o bootpack.hrb
+	#$(CC) $(CFLAGS) -T har.ld bootpack.c hankaku.o nasmfunc.o -o $@
+#bootpack.hrb : bootpack.o hankaku.o nasmfunc.o mysprintf.o har.ld
+#	ld -m elf_i386 -T har.ld bootpack.o hankaku.o nasmfunc.o mysprintf.o -o bootpack.hrb
+
+haribote.sys : asmhead.bin bootpack.hrb Makefile
+	#nasm haribote.asm -o haribote.sys -l haribote.lst
+	cat asmhead.bin bootpack.hrb > haribote.sys
+
+haribote.img : ipl10.bin haribote.sys Makefile
+	mformat -f 1440 -C -B ipl10.bin -i haribote.img ::
+	mcopy haribote.sys -i haribote.img ::
+
+asm :
+	make -r ipl10.bin
+
+img :
+	make -r haribote.img
+
+run :
+	make img
+	qemu-system-i386 -fda haribote.img	# "-fda" for floppy disk
+
+debug:
+	make img
+	qemu-system-i386 -fda haribote.img -gdb tcp::10000 -S
+
+clean :
+	rm *.lst
+	rm *.o
+	rm *.bin
+	rm *.hrb
+	rm *.sys
+
+src_only :
+	make clean
+	rm haribote.img
+
