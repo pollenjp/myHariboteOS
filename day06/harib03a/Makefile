@@ -6,6 +6,9 @@ CFLAGS = -c -m32 -march=i486 -nostdlib
 
 ###########################
 
+default :
+	make run
+
 ipl10.bin : ipl10.asm
 	nasm $< -o $@ -l ipl10.lst
 
@@ -16,7 +19,7 @@ bootpack.o : bootpack.c
 	$(CC) $(CFLAGS) $< -o $@
 
 nasmfunc.o : nasmfunc.asm
-	nasm -f elf $< -o $@ -l asmfunc.lst
+	nasm -f elf $< -o $@ -l nasmfunc.lst
 
 hankaku.o : hankaku.c
 	$(CC) $(CFLAGS) $< -o $@
@@ -30,11 +33,12 @@ graphic.o : graphic.c
 dsctbl.o : dsctbl.c
 	$(CC) $(CFLAGS) $< -o $@
 
-bootpack.hrb : bootpack.c nasmfunc.o hankaku.o mysprintf.o graphic.o dsctbl.o har.ld
-	$(CC) -m32 -march=i486 -nostdlib -nostdinc -T har.ld bootpack.c nasmfunc.o hankaku.o mysprintf.o graphic.o dsctbl.o -o $@
-
-#bootpack.hrb : bootpack.o nasmfunc.o hankaku.o mysprintf.o graphic.o dsctbl.o har.ld
-#	ld -m elf_i386 -T har.ld bootpack.o nasmfunc.o hankaku.o mysprintf.o graphic.o dsctbl.o -o $@
+#OBJS_BOOTPACK = bootpack.c nasmfunc.o hankaku.o mysprintf.o graphic.o dsctbl.o
+#bootpack.hrb : $(OBJS_BOOTPACK) har.ld
+#	$(CC) -m32 -march=i486 -nostdlib -nostdinc -T har.ld $(OBJS_BOOTPACK) -o $@
+OBJS_BOOTPACK = bootpack.o nasmfunc.o hankaku.o mysprintf.o graphic.o dsctbl.o
+bootpack.hrb : $(OBJS_BOOTPACK) har.ld
+	ld -m elf_i386 -T har.ld $(OBJS_BOOTPACK) -o $@
 
 haribote.sys : asmhead.bin bootpack.hrb Makefile
 	cat asmhead.bin bootpack.hrb > haribote.sys
@@ -62,7 +66,7 @@ clean :
 	rm *.sys
 
 src_only :
-	make clean
 	rm haribote.img
+	make clean
 
 
