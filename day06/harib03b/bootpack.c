@@ -1,4 +1,4 @@
-// harib03a/bootpack.c
+// bootpack.c
 
 extern void io_hlt(void);
 extern void io_cli(void);

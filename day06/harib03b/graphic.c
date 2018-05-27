@@ -1,4 +1,4 @@
-// harib03a/graphic.c
+// graphic.c
 
 void io_hlt(void);
 void io_cli(void);

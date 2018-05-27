@@ -1,4 +1,4 @@
-// harib03a/dsctbl.c
+// dsctbl.c
 
 
 struct BootInfo {

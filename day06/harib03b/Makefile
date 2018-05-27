@@ -1,4 +1,4 @@
-# harib03b/Makefile
+# Makefile
 
 CC = gcc
 CFLAGS = -c -m32 -march=i486 -nostdlib
