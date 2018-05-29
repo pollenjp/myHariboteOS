@@ -1,4 +1,4 @@
-// harib03a/graphic.c
+// graphic.c
 
 #include "bootpack.h"
 
