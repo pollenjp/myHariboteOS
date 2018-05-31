@@ -78,8 +78,9 @@ void init_gdtidt(void);
 #define AR_CODE32_ER  0x409a      // 2 byte
 
 
+//
 // int.c
-// PICはポート番号が同じでも区別してくれる
+void init_pic(void)
 #define PIC0_ICW1 0x0020
 #define PIC0_OCW2 0x0020
 #define PIC0_IMR  0x0021
@@ -92,4 +93,5 @@ void init_gdtidt(void);
 #define PIC1_ICW2 0x00a1
 #define PIC1_ICW3 0x00a1
 #define PIC1_ICW4 0x00a1
+  // PICはポート番号が同じでも区別してくれる
 
