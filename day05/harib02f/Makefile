@@ -1,9 +1,20 @@
 
-
-
 default:
-	make img
+	make run
 
+#--------------------
+#	hankaku char
+#--------------------
+convHankakuTxt : convHankakuTxt.c
+	$(CC) $< -o $@
+
+hankaku.c : hankaku.txt convHankakuTxt
+	./convHankakuTxt
+
+
+#--------------------
+#	haribote
+#--------------------
 ipl10.bin : ipl10.asm Makefile
 	nasm ipl10.asm -o ipl10.bin -l ipl10.lst
 
@@ -14,7 +25,7 @@ asmhead.bin : asmhead.asm Makefile
 nasmfunc.o : nasmfunc.asm Makefile
 	nasm -f elf nasmfunc.asm -o nasmfunc.o -l asmfunc.lst
 
-bootpack.hrb : bootpack.c har.ld nasmfunc.o Makefile
+bootpack.hrb : bootpack.c har.ld hankaku.c nasmfunc.o Makefile
 	gcc -march=i486 -m32 -nostdlib -T har.ld bootpack.c hankaku.c nasmfunc.o -o bootpack.hrb
 		# i486形式でcompile
 
@@ -46,6 +57,8 @@ clean :
 	rm *.bin
 	rm *.hrb
 	rm *.sys
+	rm hankaku.c
+	rm convHankakuTxt
 
 src_only :
 	make clean

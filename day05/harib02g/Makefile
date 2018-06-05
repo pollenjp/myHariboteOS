@@ -6,12 +6,24 @@ CFLAGS = -c -m32 -march=i486 -nostdlib
 
 ###########################
 
-all :
-	make img
+default:
+	make run
 
-TMPFILE = ipl10.asm
-$(TMPFILE:%.asm=%.bin) : $(TMPFILE)
-	nasm $< -o $@ -l $(TMPFILE:%.asm=%.lst)
+#--------------------
+#	hankaku char
+#--------------------
+convHankakuTxt : convHankakuTxt.c
+	$(CC) $< -o $@
+
+hankaku.c : hankaku.txt convHankakuTxt
+	./convHankakuTxt
+
+
+#--------------------
+#	haribote
+#--------------------
+ipl10.bin : ipl10.asm Makefile
+	nasm ipl10.asm -o ipl10.bin -l ipl10.lst
 
 asmhead.bin : asmhead.asm
 	nasm asmhead.asm -o asmhead.bin -l asmhead.lst
@@ -30,7 +42,6 @@ mysprintf.o : mysprintf.c
 
 bootpack.hrb : bootpack.c hankaku.o nasmfunc.o mysprintf.o har.ld
 	$(CC) -m32 -march=i486 -nostdlib -nostdinc -T har.ld bootpack.c hankaku.o nasmfunc.o mysprintf.o -o bootpack.hrb
-	#$(CC) $(CFLAGS) -T har.ld bootpack.c hankaku.o nasmfunc.o -o $@
 #bootpack.hrb : bootpack.o hankaku.o nasmfunc.o mysprintf.o har.ld
 #	ld -m elf_i386 -T har.ld bootpack.o hankaku.o nasmfunc.o mysprintf.o -o bootpack.hrb
 
@@ -62,6 +73,8 @@ clean :
 	rm *.bin
 	rm *.hrb
 	rm *.sys
+	rm hankaku.c
+	rm convHankakuTxt
 
 src_only :
 	make clean

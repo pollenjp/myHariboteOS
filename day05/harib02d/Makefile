@@ -1,5 +1,6 @@
+
 default:
-	make img
+	make run
 
 ipl10.bin : ipl10.asm Makefile
 	nasm ipl10.asm -o ipl10.bin -l ipl10.lst
