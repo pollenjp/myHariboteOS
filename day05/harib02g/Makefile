@@ -34,11 +34,11 @@ nasmfunc.o : nasmfunc.asm Makefile
 hankaku.o : hankaku.c
 	$(CC) $(CFLAGS) hankaku.c -o hankaku.o
 
-bootpack.o : bootpack.c
-	$(CC) $(CFLAGS) bootpack.c -o bootpack.o
-
 mysprintf.o : mysprintf.c
 	$(CC) $(CFLAGS) -nostdlib $^ -o $@
+
+#bootpack.o : bootpack.c
+#	$(CC) $(CFLAGS) bootpack.c -o bootpack.o
 
 bootpack.hrb : bootpack.c hankaku.o nasmfunc.o mysprintf.o har.ld
 	$(CC) -m32 -march=i486 -nostdlib -nostdinc -T har.ld bootpack.c hankaku.o nasmfunc.o mysprintf.o -o bootpack.hrb
