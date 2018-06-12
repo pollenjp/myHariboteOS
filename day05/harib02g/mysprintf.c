@@ -1,3 +1,6 @@
+// mysprintf.c
+// http://bttb.s1.valueserver.jp/wordpress/blog/2017/12/17/makeos-5-2/
+
 #include <stdarg.h>
  
 //10進数からASCIIコードに変換
