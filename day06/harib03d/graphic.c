@@ -106,7 +106,8 @@ void putfont8(char *vram,   // 4 byte
     if ((d & 0x08) != 0){p[4] = c;}
     if ((d & 0x04) != 0){p[5] = c;}
     if ((d & 0x02) != 0){p[6] = c;}
-    if ((d & 0x01) != 0) p[7] = c;}
+    if ((d & 0x01) != 0){p[7] = c;}
+  }
   return;
 }
 
