@@ -4,13 +4,13 @@
 
 
 
-# 目的
+## 目的
 "30日でできる！OS自作入門"の内容をUbuntu(Linux)で実行するには本の内容だけでは厳しいので調べた結果をメモ。
 
 ![image.png](https://qiita-image-store.s3.amazonaws.com/0/195174/f19d798d-a943-c5a2-17a3-da10e56aee6c.png)
 
 
-# 実行環境
+## 実行環境
 - Ubuntu 16.04 LTS
 - nasm (naskではなくより一般的なnasmを使用しました）
 
@@ -19,17 +19,17 @@
 https://github.com/pollenjp/myHariboteOS
 
 
-# バイナリファイル作成(helloos.img)
+## バイナリファイル作成(helloos.img)
 何らかのバイナリエディタをインストールして入力していきます。
 自分はghexを使いました。
 
-## ghexのインストール
+### ghexのインストール
 ```
 $ sudo apt install ghex
 ($ sudo apt-get install ghex)
 ```
 
-## helloos.img
+### helloos.img
 ```
 $ touch helloos.img
 $ ghex helloos.img
@@ -40,8 +40,8 @@ $ ghex helloos.img
 Insertボタンまたは[Edit]->[Insert Mode]を押すと入力できるようになるので本に書いてあるとおりに入力していく。（自分はおよそ１日かかりました。朝からおしっぱなしに（固定）して次の日の朝くらいまで）
 また、offsetは左下に表示されています。
 
-# 表示
-## エミュレータで表示
+## 表示
+### エミュレータで表示
 - 参考サイト：<a href="http://tsurugidake.hatenablog.jp/">Linuxで書くOS自作入門 1日目 - Tsurugidake's diary</a>
 
 `qemu`をインストールして、実行させましょう。
@@ -59,7 +59,47 @@ $ qemu-system-i386 helloos.img
 ![image.png](https://qiita-image-store.s3.amazonaws.com/0/195174/a613a724-814f-e6cb-4e85-cb015926f223.png)
 
 
-## USBブートでPC上に表示
+### Virtualboxで起動 (2019/02/02追記)
+
+新規をクリック
+
+![image.png](https://qiita-image-store.s3.amazonaws.com/0/195174/354853f1-429f-b4e3-523f-e19f22610580.png)
+
+- タイプ:Other
+- バージョン:Other/Unknown
+
+![image.png](https://qiita-image-store.s3.amazonaws.com/0/195174/e3cd5839-df21-faf5-a1be-ca5ccb3840cb.png)
+
+今は全然メモリいらないが、もし必要になったらまた新規に作ればいいと思います。
+
+![image.png](https://qiita-image-store.s3.amazonaws.com/0/195174/1d7a5844-96b3-846a-8960-28c351c76e4d.png)
+
+仮想ハードディスクは作成する必要が無いので「追加しない」。
+
+![image.png](https://qiita-image-store.s3.amazonaws.com/0/195174/bc7a1a45-533d-1164-c71b-a232ca99beb8.png)
+
+「続ける」
+![image.png](https://qiita-image-store.s3.amazonaws.com/0/195174/d486a58a-5c04-a4e1-37bb-08529c98dfbc.png)
+
+設定を選択
+![image.png](https://qiita-image-store.s3.amazonaws.com/0/195174/88f1a162-c8dc-e6ae-cf41-0bcfee2b1ed4.png)
+
+ストレージを選択
+![image.png](https://qiita-image-store.s3.amazonaws.com/0/195174/231b5299-b0ae-70cd-4eca-44cc2671f81c.png)
+
+下の「＋（新しいストレージコントローラを追加します）」から「フロッピーコントローラを追加を選択」
+![image.png](https://qiita-image-store.s3.amazonaws.com/0/195174/799a09dd-3ca8-6c7d-bffb-36742db226e2.png)
+
+「コントローラ:Floppy」の右側にある「＋」を選択し、「ディスクを選択」から自分の「helloos.img」を選択
+![image.png](https://qiita-image-store.s3.amazonaws.com/0/195174/403a6174-65bd-8e86-a8a5-28a1afb93b11.png)
+
+![image.png](https://qiita-image-store.s3.amazonaws.com/0/195174/edcaffd4-86dc-a9f3-3511-8e6bac7cfdaa.png)
+
+あとは起動すれば以下のように表示されます。
+![image.png](https://qiita-image-store.s3.amazonaws.com/0/195174/44c0a819-1095-6c89-1e7d-a8e1b47645a9.png)
+
+
+### USBブートでPC上に表示
 
 - <a href="http://d.hatena.ne.jp/longingandtears/20120107/1325915007">USBブート - 未来設計図</a>
 - <a href="https://syusui.tumblr.com/post/109637861048/30%E6%97%A5%E3%81%A7%E3%81%A7%E3%81%8D%E3%82%8Bos%E8%87%AA%E4%BD%9C%E5%85%A5%E9%96%80%E3%82%92linux%E3%81%A7%E3%82%84%E3%81%A3%E3%81%A6%E3%81%BF%E3%82%8B-1%E6%97%A5%E7%9B%AE?is_related_post=1">Akitsushima Design — 『30日でできる！OS自作入門』をLinuxでやってみる 1日目</a>
@@ -68,7 +108,7 @@ $ qemu-system-i386 helloos.img
 
 その際にUSBがsdb何なのかを以下の手順で確認できます。
 
-### USBを確認
+#### USBを確認
 `disk`を検索して実行してUSBがどこに割り当てられているのかを確認
 ![image.png](https://qiita-image-store.s3.amazonaws.com/0/195174/da4fc1b3-13d3-e57d-4ae7-f8c3ef993e67.png)
 
@@ -76,7 +116,7 @@ $ qemu-system-i386 helloos.img
 ![image.png](https://qiita-image-store.s3.amazonaws.com/0/195174/a99797ba-2124-cffa-9e0f-e464ca3f8584.png)
 
 
-# アセンブラ
+## アセンブラ
 - <a href="http://bttb.s1.valueserver.jp/wordpress/blog/2017/11/14/make-os1/">OSの動作原理を勉強する | OS自作入門 1日目 【Linux】</a>
 - <a href="http://hrb.osask.jp/wiki/?tools/nask">naskについてのページ</a>
 - <a href="tsurugidake.hatenablog.jp/entry/2017/08/12/205939">Linuxで書くOS自作入門 1日目 - Tsurugidake's diary</a>
@@ -192,14 +232,14 @@ $ qemu-system-i386 helloos.img
 出力結果
 ![image.png](https://qiita-image-store.s3.amazonaws.com/0/195174/dbadf9b5-41a3-2c89-50ce-a6c553a5e398.png)
 
-# おまけ
+## おまけ
 アセンブル時に`-l`オプションをつけると対応する機械語が表示できる。
 
 ```:tenrminal(入力)
 $ nasm helloos.asm -o helloos.img -l helloos.lst
 ```
 
-# 参考
+## 参考
 
 - <a href="https://syusui.tumblr.com/post/109637861048/30%E6%97%A5%E3%81%A7%E3%81%A7%E3%81%8D%E3%82%8Bos%E8%87%AA%E4%BD%9C%E5%85%A5%E9%96%80%E3%82%92linux%E3%81%A7%E3%82%84%E3%81%A3%E3%81%A6%E3%81%BF%E3%82%8B-1%E6%97%A5%E7%9B%AE">Akitsushima Design — 『30日でできる！OS自作入門』をLinuxでやってみる 1日目</a>
 
