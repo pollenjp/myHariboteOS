@@ -1,6 +1,6 @@
 # ファイル生成規則
 
-ipl.bin : ipl.asm Makefile
+ipl.bin : ipl.asm
 	nasm ipl.asm -o ipl.bin -l ipl.lst
 
 #helloos.img : ipl.bin tail.bin Makefile
