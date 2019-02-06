@@ -1,4 +1,3 @@
-; hello-os
 ; FAT12 format
 
 ; - [Tips　IA32（x86）命令一覧](http://softwaretechnique.jp/OS_Development/Tips/IA32_instructions.html)
@@ -157,11 +156,11 @@ putloop:
         CMP     AL, 0           ; compare (<end msg>)
         JE      fin             ; jump to fin if equal to 0
 
-																; 一文字表示
+                                ; 一文字表示
         MOV     AH, 0x0e        ; AH = 0x0e
         MOV     BX, 15          ; BH = 0, BL = <color code>
         INT     0x10            ; interrupt BIOS
-																; [INT(0x10); ビデオ関係 - (AT)BIOS - os-wiki](http://oswiki.osask.jp/?%28AT%29BIOS#n5884802)
+                                ; [INT(0x10); ビデオ関係 - (AT)BIOS - os-wiki](http://oswiki.osask.jp/?%28AT%29BIOS#n5884802)
         JMP     putloop
 fin:
         HLT
@@ -174,11 +173,11 @@ msg:
         DB      0                   ; end msg
 
         ;RESB    0x7dfe-($-$$)      ; これだとエラーが出た。。。
-																	  ; セクタサイズ 512 Byte なので 510 Byte目までを埋めたいときは
-																	  ; 0x1fe - ($-$$) としてやればいい
+                                    ; セクタサイズ 512 Byte なので 510 Byte目までを埋めたいときは
+                                    ; 0x1fe - ($-$$) としてやればいい
                                     ; > you can tell how far into the section you are by using ($-$$)
                                     ; > [3.5 Expressions - NASM - The Netwide Assembler](https://www.nasm.us/doc/nasmdoc3.html#section-3.5)
-        RESB    0x1fe-($-$$)			  ; 現在の場所から 0x1fd (0x1fe の直前)
+        RESB    0x1fe-($-$$)        ; 現在の場所から 0x1fd (0x1fe の直前)
                                     ; まで(残りの未使用領域)を0で埋める
                                     ; (naskでは0で初期化するみたいだがnasm
                                     ; だと初期化しない) 
@@ -186,5 +185,5 @@ msg:
 
         ;=======================================================================
         ; END BS_BootCode       ; Name             | Offset              | Byte | Description
-        DB      0x55, 0xaa      ; BS_BootSign      | 0x7dfe-0x7dff			 | 510  |
+        DB      0x55, 0xaa      ; BS_BootSign      | 0x7dfe-0x7dff       | 510  |
 
