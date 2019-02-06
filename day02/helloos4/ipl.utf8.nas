@@ -29,8 +29,8 @@
 ; プログラム本体
 
 entry:
-        MOV     AX,0            ; レジスタ初期化
-        MOV     SS,AX
+        MOV     AX,0       ; レジスタ初期化
+        MOV     SS,AX      ; 
         MOV     SP,0x7c00
         MOV     DS,AX
         MOV     ES,AX

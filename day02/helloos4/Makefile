@@ -1,22 +1,37 @@
-# ファイル生成規則
+
+.DEFAULT_GOAL : all
+.PHONY : all
+all : img
 
 ipl.bin : ipl.asm
-	nasm ipl.asm -o ipl.bin -l ipl.lst
 
-#helloos.img : ipl.bin tail.bin Makefile
-helloos.img : ipl.bin Makefile
-	#cat ipl.bin tail.bin > helloos.img
-	cat ipl.bin > helloos.img
+%.bin : %.asm
+	nasm $^ -o $@ -l $*.lst
 
+helloos.img : ipl.bin
+	cat $^ > $@
+
+
+.PHONY : asm
 asm :
-	make -r ipl.bin
+# -r, --no-builtin-rules
+#     Eliminate use of the built-in implicit rules.
+#     Also clear out the default list of suffixes for suffix rules.
+#	make --no-builtin-rules ipl.bin
+	make ipl.bin
 
+.PHONY : img
 img :
-	make -r helloos.img
+	make helloos.img
 
+.PHONY : run
 run :
 	make img
 	qemu-system-i386 helloos.img
 
+.PHONY : clean
+clean :
+# lstは残しておいてもいいと思うのでcleanに入れていない
+	@rm *.img *.bin
 
 

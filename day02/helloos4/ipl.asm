@@ -9,6 +9,7 @@
 ; ブートセクタ (512バイト)
 ; > 0x00007c00 - 0x00007dff ： ブートセクタが読み込まれるアドレス
 ; > [ソフトウェア的用途区分 - (AT)memorymap - os-wiki](http://oswiki.osask.jp/?%28AT%29memorymap#qd4cd666)
+; リトルエンディアン
 
         ;=======================================================================
         ; このプログラムがメモリ上のどこによみこまれるのか
@@ -112,8 +113,38 @@
         ; START BS_BootCode                                | 64      448
         ; (ブートストラッププログラム. システム依存フィールドで、未使用時はゼロで埋める。)
         ; 0x7c50
+        ;
+        ; rb (register byte),  rw (register word), rd (register double-word) 等の表記は
+        ; https://www.intel.co.jp/content/dam/www/public/ijkk/jp/ja/documents/developer/IA32_Arh_Dev_Man_Vol2A_i.pdf
+        ; によっている.
+        ; >   | rb | rw | rd  |
+        ; > 0 | AL | AX | EAX |
+        ; > 1 | CL | CX | ECX |
+        ; > 2 | DL | DX | EDX |
+        ; > 3 | BL | BX | EBX |
+        ; > 4 | AL | SP | ESP |
+        ; > 5 | CL | BP | EBP |
+        ; > 6 | DL | SI | ESI |
+        ; > 7 | BL | DI | EDI |
+        ; > imm8 － 即値バイト値。記号 imm8 は -128 から +127 までの符号付き数値である
+        ; == 16 bit register ==
+        ; AX : acumulator
+        ; CX : Counter
+        ; DX : Data
+        ; BX : Base
+        ; SP : Stack Pointer
+        ; BP : Base  Pointer
+        ; SI : Source      Index
+        ; DI : Destination Index
+        ; ES : Extra Segment
+        ; CS : Code  Segment
+        ; SS : Stack Segmengt
+        ; DS : Data  Segmengt
+        ; FS : no-name
+        ; GS : no-name
+
 entry:
-        MOV     AX, 0            ; AXレジスタの初期化
+        MOV     AX, 0           ; AX (rw1) に0(imm8)代入
         MOV     SS, AX
         MOV     SP, 0x7c00
         MOV     DS, AX
@@ -121,39 +152,39 @@ entry:
 
         MOV     SI, msg
 putloop:
-        MOV     AL, [SI]        ; BYTE (accumulator low)
-        ADD     SI, 1           ; increment
+        MOV     AL, BYTE [SI]   ; BYTE (accumulator low)
+        ADD     SI, 1           ; increment stack index
         CMP     AL, 0           ; compare (<end msg>)
         JE      fin             ; jump to fin if equal to 0
+
+																; 一文字表示
         MOV     AH, 0x0e        ; AH = 0x0e
         MOV     BX, 15          ; BH = 0, BL = <color code>
         INT     0x10            ; interrupt BIOS
+																; [INT(0x10); ビデオ関係 - (AT)BIOS - os-wiki](http://oswiki.osask.jp/?%28AT%29BIOS#n5884802)
         JMP     putloop
 fin:
         HLT
         JMP     fin
 
 msg:
-                                        ; Offset              | Byte | Description
-                                        ;                     |      | 
         DB      0x0a, 0x0a
         DB      "hello, world"
         DB      0x0a
-        DB      0                       ; end msg
+        DB      0                   ; end msg
 
-        ;RESB    0x7dfe-($-$$)          ; これだとエラーが出た。。。
-        RESB    (0x7dfe-0x7c00)-($-$$)  ; 0x003e-0x004f 62-79 |      | 現在の場所から 0x1fd (0x1fe の直前)
-                                        ;                            | まで(残りの未使用領域)を0で埋める
-                                        ;                            | (naskでは0で初期化するみたいだがnasm
-                                        ;                            | だと初期化しない) 
-                                        ;                            | 0x7dfe-0x7c00 = 32254−31744 = 510
-                                        ;                            | > you can tell how far into the section you are by using ($-$$)
-                                        ;                            | > [3.5 Expressions - NASM - The Netwide Assembler](https://www.nasm.us/doc/nasmdoc3.html#section-3.5)
+        ;RESB    0x7dfe-($-$$)      ; これだとエラーが出た。。。
+																	  ; セクタサイズ 512 Byte なので 510 Byte目までを埋めたいときは
+																	  ; 0x1fe - ($-$$) としてやればいい
+                                    ; > you can tell how far into the section you are by using ($-$$)
+                                    ; > [3.5 Expressions - NASM - The Netwide Assembler](https://www.nasm.us/doc/nasmdoc3.html#section-3.5)
+        RESB    0x1fe-($-$$)			  ; 現在の場所から 0x1fd (0x1fe の直前)
+                                    ; まで(残りの未使用領域)を0で埋める
+                                    ; (naskでは0で初期化するみたいだがnasm
+                                    ; だと初期化しない) 
+                                    ; 0x7dfe-0x7c00 = 32254−31744 = 510
 
         ;=======================================================================
-        ; END BS_BootCode
-                                ; Name             | Offset              | Byte | Description
-                                ;                  |                     |      | 
+        ; END BS_BootCode       ; Name             | Offset              | Byte | Description
         DB      0x55, 0xaa      ; BS_BootSign      | 0x7dfe-0x7dff 510     2 : 以下の記述と同様
-        ;DW      0xAA55
 

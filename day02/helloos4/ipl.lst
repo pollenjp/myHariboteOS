@@ -1,75 +1,194 @@
-     1                                  ; http://tsurugidake.hatenablog.jp/entry/2017/08/15/202414
-     2                                  ; hello-os
-     3                                  ; TAB=4
-     4                                  
-     5                                          ORG     0x7c00          ; このプログラムがメモリ上のどこによみこまれるのか
-     6                                  
-     7                                  ; ディスクのための記述
-     8 00000000 EB4E                            JMP     entry           ; BS_JmpBoot        0         : jump to bootstrap program
-     9 00000002 90                              DB      0x90            ; BS_JmpBoot                1
-    10 00000003 48454C4C4F49504C                DB      "HELLOIPL"      ; BS_OEMName        3       8
-    11 0000000B 0002                            DW      512             ; BPB_BytsPerSec    11      2 : バイト単位のセクタ サイズ
-    12 0000000D 01                              DB      1               ; BPB_SecPerClus    13      1 : アロケーション ユニット(<-クラスタ)(割り当て単位)当たりのセクタ数
-    13 0000000E 0100                            DW      1               ; BPB_RsvdSecCnt    14      2 : 予約領域のセクタ数 (少なくともこのBPBを含むブートセクタそれ自身が存在するため、0であってはならない)
-    14 00000010 02                              DB      2               ; BPB_NumFATs       16      1 : FATの個数 (このフィールドの値は常に2に設定すべきである)
-    15 00000011 E000                            DW      224             ; BPB_RootEntCnt    17      2 : ルートディレクトリに含まれるディレクトリエントリの数を示す
-    16 00000013 400B                            DW      2880            ; BPB_TotSec16      19      2 : ボリュームの総セクタ数(古い16ビット フィールド)
-    17 00000015 F0                              DB      0xf0            ; BPB_Media         21      1 : メディアタイプ(区画分けされた固定ディスク ドライブでは0xF8が標準値である。区画分けされないリムーバブル 
-    18 00000016 0900                            DW      9               ; BPB_FATSz16       22      2 : 1個のFATが占めるセクタ数
-    19 00000018 1200                            DW      18              ; BPB_SecPerTrk     24      2 : トラック当たりのセクタ数
-    20 0000001A 0200                            DW      2               ; BPB_NumHeads      26      2 : ヘッドの数
-    21 0000001C 00000000                        DD      0               ; BPB_HiddSec       28      4 : ストレージ上でこのボリュームの手前に存在する隠れた物理セクタの数(ボリュームがストレージの先頭から始ま
-    22 00000020 400B0000                        DD      2880            ; BPB_TotSec32      32      4 : ボリュームの総セクタ数(新しい32ビット フィールド)
-    23                                  
-    24                                  
-    25                                  ; FAT12/16におけるオフセット36以降のフィールド
-    26                                          ;DB      0, 0, 0x29      ; 以下の３行に分けて記述
-    27 00000024 00                              DB      0x00            ; BS_DrvNum         36      1
-    28 00000025 00                              DB      0x00            ; BS_Reserved1      37      1
-    29 00000026 29                              DB      0x29            ; BS_BootSig        38      1
-    30                                  
-    31 00000027 FFFFFFFF                        DD      0xffffffff      ; BS_VolID          39      4 : ボリュームシリアル番号
-    32 0000002B 48454C4C4F2D4F5320-             DB      "HELLO-OS   "   ; BS_VolLab         43      11 : ディスクの名前(ルート ディレクトリに記録される11バイトのボリューム ラベルに一致する)
-    33 00000034 2020               
-    34 00000036 4641543132202020                DB      "FAT12   "      ; BS_FilSysType     54      8 : フォーマットの名前
-    35 0000003E <res 00000012>                  RESB    18              ; とりあえず18バイト開けておく
-    36          ******************       warning: uninitialized space declared in .text section: zeroing
-    37                                  
-    38                                  ; START BS_BootCode                                 64      448
-    39                                  ; (ブートストラップ プログラム。システム依存フィールドで、未使用時はゼロで埋める。)
-    40                                  entry:
-    41 00000050 B80000                          MOV     AX, 0            ; レジスタの初期化
-    42 00000053 8ED0                            MOV     SS, AX
-    43 00000055 BC007C                          MOV     SP, 0x7c00
-    44 00000058 8ED8                            MOV     DS, AX
-    45 0000005A 8EC0                            MOV     ES, AX
-    46                                  
-    47 0000005C BE[7400]                        MOV     SI, msg
-    48                                  putloop:
-    49 0000005F 8A04                            MOV     AL, [SI]        ; BYTE (accumulator low)
-    50 00000061 83C601                          ADD     SI, 1           ; increment
-    51 00000064 3C00                            CMP     AL, 0           ; compare (<end msg>)
-    52 00000066 7409                            JE      fin             ; jump to fin if equal to 0
-    53 00000068 B40E                            MOV     AH, 0x0e        ; AH = 0x0e
-    54 0000006A BB0F00                          MOV     BX, 15          ; BH = 0, BL = <color code>
-    55 0000006D CD10                            INT     0x10            ; interrupt BIOS
-    56 0000006F EBEE                            JMP     putloop
-    57                                  fin:
-    58 00000071 F4                              HLT
-    59 00000072 EBFD                            JMP     fin
-    60                                  
-    61                                  msg:
-    62 00000074 0A0A                            DB      0x0a, 0x0a
-    63 00000076 68656C6C6F2C20776F-             DB      "hello, world"
-    64 0000007F 726C64             
-    65 00000082 0A                              DB      0x0a
-    66 00000083 00                              DB      0               ; end msg
-    67                                  
-    68                                          ;RESB    0x7dfe-($-$$)  ; これだとエラーが出た。。。
-    69 00000084 <res 0000017A>                  RESB    0x7dfe-0x7c00-($-$$)    ; 現在の場所から0x1fdまで(残りの未使用領域)を0で埋める。
-    70          ******************       warning: uninitialized space declared in .text section: zeroing
-    71                                  ; END BS_BootCode
-    72                                  
-    73 000001FE 55AA                            DB      0x55, 0xaa      ; BS_BootSign       510     2 : 以下の記述と同様
-    74                                          ;DW      0xAA55
-    75                                  
+     1                                  ; hello-os
+     2                                  ; FAT12 format
+     3                                  
+     4                                  ; - [Tips　IA32（x86）命令一覧](http://softwaretechnique.jp/OS_Development/Tips/IA32_instructions.html)
+     5                                  ;   - [Add命令](http://softwaretechnique.jp/OS_Development/Tips/IA32_Instructions/ADD.html)
+     6                                  ;   - [MOV命令](http://softwaretechnique.jp/OS_Development/Tips/IA32_Instructions/MOV.html)
+     7                                  
+     8                                  ;=======================================================================================================================
+     9                                  ; ブートセクタ (512バイト)
+    10                                  ; > 0x00007c00 - 0x00007dff ： ブートセクタが読み込まれるアドレス
+    11                                  ; > [ソフトウェア的用途区分 - (AT)memorymap - os-wiki](http://oswiki.osask.jp/?%28AT%29memorymap#qd4cd666)
+    12                                  ; リトルエンディアン
+    13                                  
+    14                                          ;=======================================================================
+    15                                          ; このプログラムがメモリ上のどこによみこまれるのか
+    16                                          ; > [7.1.1 ORG: Binary File Program Origin - NASM - The Netwide Assembler](https://www.nasm.us/doc/nasmdoc7.html#section-7.1.1)
+    17                                          ORG     0x7c00
+    18                                  
+    19                                          ;=======================================================================
+    20                                          ; ディスクのための記述
+    21                                          ; http://elm-chan.org/docs/fat.html#notes
+    22                                          ; BPB(BIOS Parameter Block)
+    23                                                                  ; Name             | Offset              | Byte | Description
+    24                                                                  ;                                               | 
+    25                                          ; FAT12/16/32共通フィールド(オフセット0～35)
+    26 00000000 EB4E                            JMP     entry           ; BS_JmpBoot       | 0x0000-0x0002 0-2   |    3 | Jump to Bootstrap
+    27 00000002 90                              DB      0x90            ;                                               | ブートストラッププログラムへのジャンプ命令(x86命令)。
+    28                                                                  ;                                               | 0xEB, 0x??, 0x90 (ショート ジャンプ+NOP)
+    29 00000003 48454C4C4F49504C                DB      "HELLOIPL"      ; BS_OEMName       | 0x0003-0x000a 3-10  |    8 | これは単なる名前である
+    30 0000000B 0002                            DW      512             ; BPB_BytsPerSec   | 0x000b-0x000c 11-12 |    2 | セクタあたりのバイト数.
+    31                                                                  ;                                               | 512, 1024, 2048, 4096
+    32                                                                  ;                                               | Bytes Per Cluster
+    33 0000000D 01                              DB      1               ; BPB_SecPerClus   | 0x000d           13 |    1 | アロケーションユニット(割り当て単位)当たりのセクタ数
+    34                                                                  ;                                               | アロケーションユニットはクラスタと呼ばれている
+    35                                                                  ;                                               | Secters Per Cluster
+    36 0000000E 0100                            DW      1               ; BPB_RsvdSecCnt   | 0x000e-0x000f 14-15 |    2 | 予約領域のセクタ数 (少なくとも
+    37                                                                  ;                                               | このBPB(BIOS Parameter Block)を含むブート
+    38                                                                  ;                                               | セクタそれ自身が存在するため0であってはならない)
+    39 00000010 02                              DB      2               ; BPB_NumFATs      | 0x0010           16 |    1 | FATの個数 
+    40                                                                  ;                                               | (このフィールドの値は常に2に設定すべきである)
+    41 00000011 E000                            DW      224             ; BPB_RootEntCnt   | 0x0011-0x0012 17-18 |    2 | FAT12/16ボリュームではルートディレクトリに
+    42                                                                  ;                                               | 含まれるディレクトリエントリの数を示す.
+    43                                                                  ;                                               | このフィールドにはディレクトリテーブルのサイズが
+    44                                                                  ;                                               | 2セクタ境界にアライメントする値,つまり,
+    45                                                                  ;                                               | BPB_RootEntCnt*32がBPB_BytsPerSecの偶数倍になる値
+    46                                                                  ;                                               | を設定すべきである. (32というのはディレクトリエントリ1個のサイズ)
+    47                                                                  ;                                               | 最大の互換性のためにはFAT16では512に設定すべき.
+    48                                                                  ;                                               | FAT32ボリュームではこのフィールドは使われず,
+    49                                                                  ;                                               | 常に0でなければならない.
+    50                                                                  ;                                               | 224x32=4x16x32=4x512
+    51                                                                  ;                                               | 512=32x16
+    52                                                                  ;                  |                     |      | 
+    53 00000013 400B                            DW      2880            ; BPB_TotSec16     | 0x0013-0x0014 19-20 |    2 | ボリュームの総セクタ数(古い16ビットフィールド).
+    54                                                                  ;                                               | ボリュームの4つの領域全てを含んだセクタ数.
+    55                                                                  ;                                               | FAT12/16でボリュームのセクタ数が0x10000以上になる
+    56                                                                  ;                                               | ときは,このフィールドには無効値(0)が設定され,真の
+    57                                                                  ;                                               | 値がBPB_TotSec32に設定される.
+    58                                                                  ;                                               | FAT32ボリュームでは,このフィールドは必ず無効値で
+    59                                                                  ;                                               | なければならない.
+    60                                                                  ;                                               | 0x10000=(2^4)^4=65536 > 2880
+    61                                                                  ;                  |                     |      | 
+    62 00000015 F0                              DB      0xf0            ; BPB_Media        | 0x0015           21 |    1 | 区画分けされた固定ディスクドライブでは0xF8が標準
+    63                                                                  ;                                               | 値である. 区画分けされないリムーバブルメディアで
+    64                                                                  ;                                               | は0xF0がしばしば使われる. このフィールドに有効な
+    65                                                                  ;                                               | 値は,0xF0,0xF8,0xF9,0xFA,0xFB,0xFC,0xFD,0xFE,0xFF
+    66                                                                  ;                                               | で,ほかに重要な点はこれと同じ値をFAT[0]の下位8
+    67                                                                  ;                                               | ビットに置かなければならないということだけである.
+    68                                                                  ;                                               | これはMS-DOS 1.xでメディアタイプの設定に遡り,
+    69                                                                  ;                                               | 既に使われていない。
+    70                                                                  ;                  |                     |      | 
+    71 00000016 0900                            DW      9               ; BPB_FATSz16      | 0x0016-0x0017 22-23 |    2 | 1個のFATが占めるセクタ数.
+    72                                                                  ;                                               | このフィールドはFAT12/FAT16ボリュームでのみ使われる.
+    73                                                                  ;                                               | FAT32ボリュームでは必ず無効値(0)でなければならず,
+    74                                                                  ;                                               | 代わりにBPB_FATSz32が使われる. FAT領域のサイズは,
+    75                                                                  ;                                               | この値 * BPB_NumFATsセクタとなる。
+    76                                                                  ;                  |                     |      | 
+    77 00000018 1200                            DW      18              ; BPB_SecPerTrk    | 0x0018-0x0019 24-25 |    2 | トラック当たりのセクタ数
+    78 0000001A 0200                            DW      2               ; BPB_NumHeads     | 0x001a-0x001b 26-27 |    2 | ヘッドの数
+    79 0000001C 00000000                        DD      0               ; BPB_HiddSec      | 0x001c-0x001f 28-31 |    4 | ストレージ上でこのボリュームの手前に存在する隠れ
+    80                                                                  ;                                               | た物理セクタの数. 一般的にIBM PCのディスクBIOSで
+    81                                                                  ;                                               | アクセスされるストレージに関するものであり,どの
+    82                                                                  ;                                               | ような値が入るかはシステム依存. ボリュームがスト
+    83                                                                  ;                                               | レージの先頭から始まる場合(つまりフロッピーディ
+    84                                                                  ;                                               | スクなど区画分けされていないもの)では常に0である
+    85                                                                  ;                                               | べきである.
+    86                                                                  ;                  |                     |      | 
+    87 00000020 400B0000                        DD      2880            ; BPB_TotSec32     | 0x0020-0x0023 32-35 |    4 | ボリュームの総セクタ数(新しい32ビットフィールド).
+    88                                                                  ;                                               | この値はボリュームの4つの領域全てを含んだセクタ数
+    89                                                                  ;                                               | である.
+    90                                                                  ;                                               | FAT12/16ボリュームで総セクタ数が0x10000未満のとき,
+    91                                                                  ;                                               | このフィールドは無効値(0)でなければならなず,真の
+    92                                                                  ;                                               | 値はBPB_TotSec16に設定される.
+    93                                                                  ;                                               | FAT32ボリュームでは常に有効値が入る.
+    94                                  
+    95                                          ;=======================================================================
+    96                                          ; FAT12/16におけるオフセット36以降のフィールド
+    97                                                                  ; Name             | Offset              | Byte | Description
+    98                                                                  ;                  |                     |      | 
+    99 00000024 00                              DB      0x00            ; BS_DrvNum        | 0x0024           36 |    1 |
+   100 00000025 00                              DB      0x00            ; BS_Reserved1     | 0x0025           37 |    1 |
+   101 00000026 29                              DB      0x29            ; BS_BootSig       | 0x0026           38 |    1 |
+   102                                  
+   103 00000027 FFFFFFFF                        DD      0xffffffff      ; BS_VolID         | 0x0027-0x002a 39-42 |    4 | ボリュームシリアル番号
+   104 0000002B 48454C4C4F2D4F5320-             DB      "HELLO-OS   "   ; BS_VolLab        | 0x002a-0x0036 43-54 |   11 | ディスクの名前(ルートディレクトリに記録される11バイトのボリュームラベルに一致する)
+   105 00000034 2020               
+   106 00000036 4641543132202020                DB      "FAT12   "      ; BS_FilSysType    | 0x0036-0x003d 54-61 |    8 | フォーマットの名前
+   107 0000003E <res 00000012>                  RESB    18              ;                  | 0x003e-0x004f 62-79 |    8 | Reserve Bytes : [3.2.2 RESB and Friends: Declaring Uninitialized Data](https://www.nasm.us/doc/nasmdoc3.html#section-3.2.2)
+   108          ******************       warning: uninitialized space declared in .text section: zeroing
+   109                                                                  ;                                               | 18バイト空けて 0x7c50 の直前まで埋める
+   110                                                                  ;                                               | naskでは0で初期化するみたいだがnasmだ
+   111                                                                  ;                                               | と初期化しない
+   112                                  
+   113                                  
+   114                                          ;=======================================================================
+   115                                          ; START BS_BootCode                                | 64      448
+   116                                          ; (ブートストラッププログラム. システム依存フィールドで、未使用時はゼロで埋める。)
+   117                                          ; 0x7c50
+   118                                          ;
+   119                                          ; rb (register byte),  rw (register word), rd (register double-word) 等の表記は
+   120                                          ; https://www.intel.co.jp/content/dam/www/public/ijkk/jp/ja/documents/developer/IA32_Arh_Dev_Man_Vol2A_i.pdf
+   121                                          ; によっている.
+   122                                          ; >   | rb | rw | rd  |
+   123                                          ; > 0 | AL | AX | EAX |
+   124                                          ; > 1 | CL | CX | ECX |
+   125                                          ; > 2 | DL | DX | EDX |
+   126                                          ; > 3 | BL | BX | EBX |
+   127                                          ; > 4 | AL | SP | ESP |
+   128                                          ; > 5 | CL | BP | EBP |
+   129                                          ; > 6 | DL | SI | ESI |
+   130                                          ; > 7 | BL | DI | EDI |
+   131                                          ; > imm8 － 即値バイト値。記号 imm8 は -128 から +127 までの符号付き数値である
+   132                                          ; == 16 bit register ==
+   133                                          ; AX : acumulator
+   134                                          ; CX : Counter
+   135                                          ; DX : Data
+   136                                          ; BX : Base
+   137                                          ; SP : Stack Pointer
+   138                                          ; BP : Base  Pointer
+   139                                          ; SI : Source      Index
+   140                                          ; DI : Destination Index
+   141                                          ; ES : Extra Segment
+   142                                          ; CS : Code  Segment
+   143                                          ; SS : Stack Segmengt
+   144                                          ; DS : Data  Segmengt
+   145                                          ; FS : no-name
+   146                                          ; GS : no-name
+   147                                  
+   148                                  entry:
+   149 00000050 B80000                          MOV     AX, 0           ; AX (rw1) に0(imm8)代入
+   150 00000053 8ED0                            MOV     SS, AX
+   151 00000055 BC007C                          MOV     SP, 0x7c00
+   152 00000058 8ED8                            MOV     DS, AX
+   153 0000005A 8EC0                            MOV     ES, AX
+   154                                  
+   155 0000005C BE[7400]                        MOV     SI, msg
+   156                                  putloop:
+   157 0000005F 8A04                            MOV     AL, BYTE [SI]   ; BYTE (accumulator low)
+   158 00000061 83C601                          ADD     SI, 1           ; increment stack index
+   159 00000064 3C00                            CMP     AL, 0           ; compare (<end msg>)
+   160 00000066 7409                            JE      fin             ; jump to fin if equal to 0
+   161                                  
+   162                                  																; 一文字表示
+   163 00000068 B40E                            MOV     AH, 0x0e        ; AH = 0x0e
+   164 0000006A BB0F00                          MOV     BX, 15          ; BH = 0, BL = <color code>
+   165 0000006D CD10                            INT     0x10            ; interrupt BIOS
+   166                                  																; [INT(0x10); ビデオ関係 - (AT)BIOS - os-wiki](http://oswiki.osask.jp/?%28AT%29BIOS#n5884802)
+   167 0000006F EBEE                            JMP     putloop
+   168                                  fin:
+   169 00000071 F4                              HLT
+   170 00000072 EBFD                            JMP     fin
+   171                                  
+   172                                  msg:
+   173 00000074 0A0A                            DB      0x0a, 0x0a
+   174 00000076 68656C6C6F2C20776F-             DB      "hello, world"
+   175 0000007F 726C64             
+   176 00000082 0A                              DB      0x0a
+   177 00000083 00                              DB      0                   ; end msg
+   178                                  
+   179                                          ;RESB    0x7dfe-($-$$)      ; これだとエラーが出た。。。
+   180                                  																	  ; セクタサイズ 512 Byte なので 510 Byte目までを埋めたいときは
+   181                                  																	  ; 0x1fe - ($-$$) としてやればいい
+   182                                                                      ; > you can tell how far into the section you are by using ($-$$)
+   183                                                                      ; > [3.5 Expressions - NASM - The Netwide Assembler](https://www.nasm.us/doc/nasmdoc3.html#section-3.5)
+   184 00000084 <res 0000017A>                  RESB    0x1fe-($-$$)			  ; 現在の場所から 0x1fd (0x1fe の直前)
+   185          ******************       warning: uninitialized space declared in .text section: zeroing
+   186                                                                      ; まで(残りの未使用領域)を0で埋める
+   187                                                                      ; (naskでは0で初期化するみたいだがnasm
+   188                                                                      ; だと初期化しない) 
+   189                                                                      ; 0x7dfe-0x7c00 = 32254−31744 = 510
+   190                                  
+   191                                          ;=======================================================================
+   192                                          ; END BS_BootCode       ; Name             | Offset              | Byte | Description
+   193 000001FE 55AA                            DB      0x55, 0xaa      ; BS_BootSign      | 0x7dfe-0x7dff 510     2 : 以下の記述と同様
+   194                                  
