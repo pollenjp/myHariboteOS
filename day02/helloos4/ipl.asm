@@ -186,5 +186,5 @@ msg:
 
         ;=======================================================================
         ; END BS_BootCode       ; Name             | Offset              | Byte | Description
-        DB      0x55, 0xaa      ; BS_BootSign      | 0x7dfe-0x7dff 510     2 : 以下の記述と同様
+        DB      0x55, 0xaa      ; BS_BootSign      | 0x7dfe-0x7dff			 | 510  |
 
