@@ -170,18 +170,18 @@ msg:
         DB      0x0a, 0x0a
         DB      "hello, world"
         DB      0x0a
-        DB      0                   ; end msg
+        DB      0               ; end msg
 
-        ;RESB    0x7dfe-($-$$)      ; これだとエラーが出た。。。
-                                    ; セクタサイズ 512 Byte なので 510 Byte目までを埋めたいときは
-                                    ; 0x1fe - ($-$$) としてやればいい
-                                    ; > you can tell how far into the section you are by using ($-$$)
-                                    ; > [3.5 Expressions - NASM - The Netwide Assembler](https://www.nasm.us/doc/nasmdoc3.html#section-3.5)
-        RESB    0x1fe-($-$$)        ; 現在の場所から 0x1fd (0x1fe の直前)
-                                    ; まで(残りの未使用領域)を0で埋める
-                                    ; (naskでは0で初期化するみたいだがnasm
-                                    ; だと初期化しない) 
-                                    ; 0x7dfe-0x7c00 = 32254−31744 = 510
+        ;RESB    0x7dfe-($-$$)  ; これだとエラーが出た。。。
+                                ; セクタサイズ 512 Byte なので 510 Byte目までを埋めたいときは
+                                ; 0x1fe - ($-$$) としてやればいい
+                                ; > you can tell how far into the section you are by using ($-$$)
+                                ; > [3.5 Expressions - NASM - The Netwide Assembler](https://www.nasm.us/doc/nasmdoc3.html#section-3.5)
+        RESB    0x1fe-($-$$)    ; 現在の場所から 0x1fd (0x1fe の直前)
+                                ; まで(残りの未使用領域)を0で埋める
+                                ; (naskでは0で初期化するみたいだがnasm
+                                ; だと初期化しない) 
+                                ; 0x7dfe-0x7c00 = 32254−31744 = 510
 
         ;=======================================================================
         ; END BS_BootCode       ; Name             | Offset              | Byte | Description
