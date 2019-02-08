@@ -1,127 +1,308 @@
-     1                                  ; haribote-ipl
-     2                                  ; TAB=4
-     3                                  
-     4                                  CYLS    EQU     10              ; どこまで読み込むか (CYLinderS)
-     5                                  
-     6                                          ORG     0x7c00          ; このプログラムがメモリ上のどこに読み込まれるか
-     7                                  
-     8                                  ; discription for floppy disk
-     9 00000000 EB4E                            JMP     entry           ; BS_JmpBoot
-    10 00000002 90                              DB      0x90            ; BS_JmpBoot
-    11 00000003 48415249424F5445                DB      "HARIBOTE"      ; BS_OEMName    8B
-    12 0000000B 0002                            DW      512             ; BPB_BytsPerSec
-    13 0000000D 01                              DB      1               ; BPB_SecPerClu
-    14 0000000E 0100                            DW      1               ; BPB_RevdSecCnt    : このBPBを含むブートセクタのみ
-    15 00000010 02                              DB      2               ; BPB_NumFATs       : FATの個数 (このフィールドの値は常に2に設定すべきである)
-    16 00000011 E000                            DW      224             ; BPB_RootEntCnt
-    17 00000013 400B                            DW      2880            ; BPB_TotSec16
-    18 00000015 F0                              DB      0xf0            ; BPB_Media
-    19 00000016 0900                            DW      9               ; BPB_FATSz16
-    20 00000018 1200                            DW      18              ; BPB_SecPerTrk
-    21 0000001A 0200                            DW      2               ; BPB_NumHeads
-    22 0000001C 00000000                        DD      0               ; BPB_HiddSec
-    23 00000020 400B0000                        DD      2880            ; BPB_TotSec32
-    24                                  
-    25                                          ; FAT12/16におけるオフセット36以降のフィールド
-    26 00000024 00                              DB      0x00            ; BS_DrvNum
-    27 00000025 00                              DB      0x00            ; BS_Reserved1
-    28 00000026 29                              DB      0x29            ; BS_BootSig
-    29                                  
-    30 00000027 FFFFFFFF                        DD      0xffffffff      ; BS_VolID
-    31 0000002B 48415249424F54454F-             DB      "HARIBOTEOS "   ; BS_VolLab     11B
-    32 00000034 5320               
-    33 00000036 4641543132202020                DB      "FAT12   "      ; BS_FilSysType 8B
-    34 0000003E <res 00000012>                  RESB    18              ; とりあえず18バイト開けておく
-    35          ******************       warning: uninitialized space declared in .text section: zeroing
-    36                                  
-    37                                  
-    38                                  ; START BS_BootCode 64(0x14)   448(0x1C0)
-    39                                  entry:
-    40 00000050 B80000                          MOV     AX, 0           ; initialize Accumulator(resister)
-    41 00000053 8ED0                            MOV     SS, AX          ; Stack Segment
-    42 00000055 BC007C                          MOV     SP, 0x7c00      ; Stack Pointer
-    43 00000058 8ED8                            MOV     DS, AX          ; Data Segment      : 番地指定のとき重要
-    44                                  
-    45                                  
-    46                                  ; load disk
-    47 0000005A B82008                          MOV     AX, 0x0820
-    48 0000005D 8EC0                            MOV     ES, AX          ; buffer address       0x0820
-    49 0000005F B500                            MOV     CH, 0           ; cylinder  0
-    50 00000061 B600                            MOV     DH, 0           ; head      0
-    51 00000063 B102                            MOV     CL, 2           ; sector    2
-    52                                  
-    53                                  readloop:
-    54 00000065 BE0000                          MOV     SI, 0           ; 失敗回数を数えるレジスタ
-    55                                  
-    56                                  retry:
-    57 00000068 B402                            MOV     AH, 0x02        ; acumulator high   : 0x02 - read disk
-    58 0000006A B001                            MOV     AL, 1           ; acumulator low    : sector    1
-    59 0000006C BB0000                          MOV     BX, 0           ; buffer address    0x0000
-    60                                                                  ; ES:BX, ESは代入済み
-    61 0000006F B200                            MOV     DL, 0x00        ; data low          : drive number
-    62 00000071 CD13                            INT     0x13            ; BIOS call
-    63 00000073 7310                            JNC     next            ; jump if not carry
-    64                                  
-    65 00000075 83C601                          ADD     SI, 1           ; increment SI
-    66 00000078 83FE05                          CMP     SI, 5
-    67 0000007B 732E                            JAE     error           ; SI >= 5 then jump to error
-    68                                  
-    69 0000007D B400                            MOV     AH, 0x00        ; 0x00 - reset
-    70 0000007F B200                            MOV     DL, 0x00        ; A drive
-    71 00000081 CD13                            INT     0x13            ; reset drive
-    72 00000083 EBE3                            JMP     retry
-    73                                  
-    74                                  next:
-    75                                          ; add 0x20 to ES
-    76                                          ; 代わりにBXに512を足してもよい
-    77 00000085 8CC0                            MOV     AX, ES          ; 0x20だけアドレスを進める
-    78 00000087 83C020                          ADD     AX, 0x0020      ; 512 / 16 = 0x20
-    79 0000008A 8EC0                            MOV     ES, AX
-    80                                  
-    81                                          ; increment CL (sector number)
-    82 0000008C 80C101                          ADD     CL, 1
-    83 0000008F 80F912                          CMP     CL, 18
-    84 00000092 76D1                            JBE     readloop
-    85                                  
-    86                                          ; ディスクのウラ面
-    87 00000094 B101                            MOV     CL, 1           ; reset sector
-    88 00000096 80C601                          ADD     DH, 1           ; reverse HEAD
-    89 00000099 80FE02                          CMP     DH, 2
-    90 0000009C 72C7                            JB      readloop
-    91                                  
-    92                                          ; next Cylinder
-    93 0000009E B600                            mov     DH, 0           ; reset HEAd
-    94 000000A0 80C501                          ADD     CH, 1           ; cylinder += 1
-    95 000000A3 80FD0A                          CMP     CH, CYLS
-    96 000000A6 72BD                            JB      readloop
-    97                                  
-    98                                  fin:
-    99 000000A8 F4                              HLT
-   100 000000A9 EBFD                            JMP     fin             ; 無限ループ
-   101                                  
-   102                                  error:
-   103 000000AB BE[C000]                        MOV     SI, msg
+     1                                  ; FAT12 format
+     2                                  
+     3                                  ; - [Tips　IA32（x86）命令一覧](http://softwaretechnique.jp/OS_Development/Tips/IA32_instructions.html)
+     4                                  ;   - [Add命令](http://softwaretechnique.jp/OS_Development/Tips/IA32_Instructions/ADD.html)
+     5                                  ;   - [MOV命令](http://softwaretechnique.jp/OS_Development/Tips/IA32_Instructions/MOV.html)
+     6                                  
+     7                                  ; リトルエンディアン
+     8                                  ; フロッピーディスク | cylinder | 0,1,...,79 (外側から)
+     9                                  ;                    | head     | 0,1 (両面記憶方式)
+    10                                  ;                    | sector   | 1,2,...,18 (1 cylinderあたり)
+    11                                  ;                    |          | 512 Byte per sector
+    12                                  ;                    | 1440 [KB] = 80x2x18x512
+    13                                  ;                    | C0-H0-S1 : cylinder 0 - head 0 - sector 0
+    14                                  
+    15                                  ;=======================================================================================================================
+    16                                  ; ブートセクタ (512バイト)
+    17                                  ; C0-H0-S1 : cylinder 0 - head 0 - sector 0
+    18                                  ; > 0x00007c00 - 0x00007dff ： ブートセクタが読み込まれるアドレス
+    19                                  ; > [ソフトウェア的用途区分 - (AT)memorymap - os-wiki](http://oswiki.osask.jp/?%28AT%29memorymap#qd4cd666)
+    20                                  
+    21                                  CYLS    EQU     10              ; どこまで読み込むか (CYLinderS)
+    22                                  																; EQUal 定数宣言(nasm)
+    23                                  
+    24                                          ;=======================================================================
+    25                                          ; このプログラムがメモリ上のどこによみこまれるのか
+    26                                          ; > [7.1.1 ORG: Binary File Program Origin - NASM - The Netwide Assembler](https://www.nasm.us/doc/nasmdoc7.html#section-7.1.1)
+    27                                          ORG     0x7c00
+    28                                  
+    29                                          ;=======================================================================
+    30                                          ; ディスクのための記述
+    31                                          ; http://elm-chan.org/docs/fat.html#notes
+    32                                          ; BPB(BIOS Parameter Block)
+    33                                                                  ; Name             | Offset              | Byte | Description
+    34                                                                  ;                                               | 
+    35                                          ; FAT12/16/32共通フィールド(オフセット0～35)
+    36 00000000 EB4E                            JMP     entry           ; BS_JmpBoot       | 0x0000-0x0002 0-2   |    3 | Jump to Bootstrap
+    37 00000002 90                              DB      0x90            ;                                               | ブートストラッププログラムへのジャンプ命令(x86命令)。
+    38                                                                  ;                                               | 0xEB, 0x??, 0x90 (ショート ジャンプ+NOP)
+    39 00000003 48415249424F5445                DB      "HARIBOTE"      ; BS_OEMName       | 0x0003-0x000a 3-10  |    8 | これは単なる名前である
+    40 0000000B 0002                            DW      512             ; BPB_BytsPerSec   | 0x000b-0x000c 11-12 |    2 | セクタあたりのバイト数.
+    41                                                                  ;                                               | 512, 1024, 2048, 4096
+    42                                                                  ;                                               | Bytes Per Cluster
+    43 0000000D 01                              DB      1               ; BPB_SecPerClus   | 0x000d           13 |    1 | アロケーションユニット(割り当て単位)当たりのセクタ数
+    44                                                                  ;                                               | アロケーションユニットはクラスタと呼ばれている
+    45                                                                  ;                                               | Secters Per Cluster
+    46 0000000E 0100                            DW      1               ; BPB_RsvdSecCnt   | 0x000e-0x000f 14-15 |    2 | 予約領域のセクタ数 (少なくとも
+    47                                                                  ;                                               | このBPB(BIOS Parameter Block)を含むブート
+    48                                                                  ;                                               | セクタそれ自身が存在するため0であってはならない)
+    49 00000010 02                              DB      2               ; BPB_NumFATs      | 0x0010           16 |    1 | FATの個数 
+    50                                                                  ;                                               | (このフィールドの値は常に2に設定すべきである)
+    51 00000011 E000                            DW      224             ; BPB_RootEntCnt   | 0x0011-0x0012 17-18 |    2 | FAT12/16ボリュームではルートディレクトリに
+    52                                                                  ;                                               | 含まれるディレクトリエントリの数を示す.
+    53                                                                  ;                                               | このフィールドにはディレクトリテーブルのサイズが
+    54                                                                  ;                                               | 2セクタ境界にアライメントする値,つまり,
+    55                                                                  ;                                               | BPB_RootEntCnt*32がBPB_BytsPerSecの偶数倍になる値
+    56                                                                  ;                                               | を設定すべきである. (32というのはディレクトリエントリ1個のサイズ)
+    57                                                                  ;                                               | 最大の互換性のためにはFAT16では512に設定すべき.
+    58                                                                  ;                                               | FAT32ボリュームではこのフィールドは使われず,
+    59                                                                  ;                                               | 常に0でなければならない.
+    60                                                                  ;                                               | 224x32=4x16x32=4x512
+    61                                                                  ;                                               | 512=32x16
+    62                                                                  ;                  |                     |      | 
+    63 00000013 400B                            DW      2880            ; BPB_TotSec16     | 0x0013-0x0014 19-20 |    2 | ボリュームの総セクタ数(古い16ビットフィールド).
+    64                                                                  ;                                               | ボリュームの4つの領域全てを含んだセクタ数.
+    65                                                                  ;                                               | FAT12/16でボリュームのセクタ数が0x10000以上になる
+    66                                                                  ;                                               | ときは,このフィールドには無効値(0)が設定され,真の
+    67                                                                  ;                                               | 値がBPB_TotSec32に設定される.
+    68                                                                  ;                                               | FAT32ボリュームでは,このフィールドは必ず無効値で
+    69                                                                  ;                                               | なければならない.
+    70                                                                  ;                                               | 0x10000=(2^4)^4=65536 > 2880
+    71                                                                  ;                  |                     |      | 
+    72 00000015 F0                              DB      0xf0            ; BPB_Media        | 0x0015           21 |    1 | 区画分けされた固定ディスクドライブでは0xF8が標準
+    73                                                                  ;                                               | 値である. 区画分けされないリムーバブルメディアで
+    74                                                                  ;                                               | は0xF0がしばしば使われる. このフィールドに有効な
+    75                                                                  ;                                               | 値は,0xF0,0xF8,0xF9,0xFA,0xFB,0xFC,0xFD,0xFE,0xFF
+    76                                                                  ;                                               | で,ほかに重要な点はこれと同じ値をFAT[0]の下位8
+    77                                                                  ;                                               | ビットに置かなければならないということだけである.
+    78                                                                  ;                                               | これはMS-DOS 1.xでメディアタイプの設定に遡り,
+    79                                                                  ;                                               | 既に使われていない。
+    80                                                                  ;                  |                     |      | 
+    81 00000016 0900                            DW      9               ; BPB_FATSz16      | 0x0016-0x0017 22-23 |    2 | 1個のFATが占めるセクタ数.
+    82                                                                  ;                                               | このフィールドはFAT12/FAT16ボリュームでのみ使われる.
+    83                                                                  ;                                               | FAT32ボリュームでは必ず無効値(0)でなければならず,
+    84                                                                  ;                                               | 代わりにBPB_FATSz32が使われる. FAT領域のサイズは,
+    85                                                                  ;                                               | この値 * BPB_NumFATsセクタとなる。
+    86                                                                  ;                  |                     |      | 
+    87 00000018 1200                            DW      18              ; BPB_SecPerTrk    | 0x0018-0x0019 24-25 |    2 | トラック当たりのセクタ数
+    88 0000001A 0200                            DW      2               ; BPB_NumHeads     | 0x001a-0x001b 26-27 |    2 | ヘッドの数
+    89 0000001C 00000000                        DD      0               ; BPB_HiddSec      | 0x001c-0x001f 28-31 |    4 | ストレージ上でこのボリュームの手前に存在する隠れ
+    90                                                                  ;                                               | た物理セクタの数. 一般的にIBM PCのディスクBIOSで
+    91                                                                  ;                                               | アクセスされるストレージに関するものであり,どの
+    92                                                                  ;                                               | ような値が入るかはシステム依存. ボリュームがスト
+    93                                                                  ;                                               | レージの先頭から始まる場合(つまりフロッピーディ
+    94                                                                  ;                                               | スクなど区画分けされていないもの)では常に0である
+    95                                                                  ;                                               | べきである.
+    96                                                                  ;                  |                     |      | 
+    97 00000020 00000000                        DD      0               ; BPB_TotSec32     | 0x0020-0x0023 32-35 |    4 | ボリュームの総セクタ数(新しい32ビットフィールド).
+    98                                                                  ;                                               | この値はボリュームの4つの領域全てを含んだセクタ数
+    99                                                                  ;                                               | である.
+   100                                                                  ;                                               | FAT12/16ボリュームで総セクタ数が0x10000未満のとき,
+   101                                                                  ;                                               | このフィールドは無効値(0)でなければならなず,真の
+   102                                                                  ;                                               | 値はBPB_TotSec16に設定される.
+   103                                                                  ;                                               | FAT32ボリュームでは常に有効値が入る.
    104                                  
-   105                                  putloop:
-   106 000000AE 8A04                            MOV     AL, [SI]        ; BYTE (accumulator low)
-   107 000000B0 83C601                          ADD     SI, 1           ; increment
-   108 000000B3 3C00                            CMP     AL, 0           ; 終了条件
-   109 000000B5 74F1                            JE      fin             ; jump to fin if equal to 0
-   110                                  
-   111 000000B7 B40E                            MOV     AH, 0x0e        ; 1 char-function
-   112 000000B9 BB0F00                          MOV     BX, 15          ; color code
-   113 000000BC CD10                            INT     0x10            ; interrupt, call BIOS
-   114 000000BE EBEE                            JMP     putloop
-   115                                  
-   116                                  msg:
-   117 000000C0 0A0A                            DB      0x0a, 0x0a
-   118 000000C2 6C6F6164206572726F-             DB      "load error"
-   119 000000CB 72                 
-   120 000000CC 0A                              DB      0x0a
-   121 000000CD 00                              DB      0               ; end point
+   105                                          ;=======================================================================
+   106                                          ; FAT12/16におけるオフセット36以降のフィールド
+   107                                                                  ; Name             | Offset              | Byte | Description
+   108                                                                  ;                  |                     |      | 
+   109 00000024 00                              DB      0x00            ; BS_DrvNum        | 0x0024           36 |    1 |
+   110 00000025 00                              DB      0x00            ; BS_Reserved1     | 0x0025           37 |    1 |
+   111 00000026 29                              DB      0x29            ; BS_BootSig       | 0x0026           38 |    1 |
+   112                                  
+   113 00000027 FFFFFFFF                        DD      0xffffffff      ; BS_VolID         | 0x0027-0x002a 39-42 |    4 | ボリュームシリアル番号
+   114 0000002B 48415249424F54454F-             DB      "HARIBOTEOS "   ; BS_VolLab        | 0x002a-0x0036 43-54 |   11 | ディスクの名前(ルートディレクトリに記録される11バイトのボリュームラベルに一致する)
+   115 00000034 5320               
+   116 00000036 4641543132202020                DB      "FAT12   "      ; BS_FilSysType    | 0x0036-0x003d 54-61 |    8 | フォーマットの名前
+   117 0000003E <res 00000012>                  RESB    18              ;                  | 0x003e-0x004f 62-79 |    8 | Reserve Bytes : [3.2.2 RESB and Friends: Declaring Uninitialized Data](https://www.nasm.us/doc/nasmdoc3.html#section-3.2.2)
+   118          ******************       warning: uninitialized space declared in .text section: zeroing
+   119                                                                  ;                                               | 18バイト空けて 0x7c50 の直前まで埋める
+   120                                                                  ;                                               | naskでは0で初期化するみたいだがnasmだ
+   121                                                                  ;                                               | と初期化しない
    122                                  
-   123 000000CE <res 00000130>                  RESB    0x7dfe - 0x7c00 - ($ - $$)  ; 現在の場所から0x1fdまで(残りの未使用領域)を0で埋める。
-   124          ******************       warning: uninitialized space declared in .text section: zeroing
-   125                                                                              ; 0x7c00スタートなのでその分を引いている
-   126                                  ; END BS_BootCode
-   127 000001FE 55AA                            DB      0x55, 0xaa      ; BS_BootSign, boot signature
+   123                                  
+   124                                          ;=======================================================================
+   125                                          ; START BS_BootCode                                | 64      448
+   126                                          ; (ブートストラッププログラム. システム依存フィールドで、未使用時はゼロで埋める。)
+   127                                          ; 0x7c50
+   128                                          ;
+   129                                          ; rb (register byte),  rw (register word), rd (register double-word) 等の表記は
+   130                                          ; https://www.intel.co.jp/content/dam/www/public/ijkk/jp/ja/documents/developer/IA32_Arh_Dev_Man_Vol2A_i.pdf
+   131                                          ; によっている.
+   132                                          ; >   | rb | rw | rd  |
+   133                                          ; > 0 | AL | AX | EAX |
+   134                                          ; > 1 | CL | CX | ECX |
+   135                                          ; > 2 | DL | DX | EDX |
+   136                                          ; > 3 | BL | BX | EBX |
+   137                                          ; > 4 | AL | SP | ESP |
+   138                                          ; > 5 | CL | BP | EBP |
+   139                                          ; > 6 | DL | SI | ESI |
+   140                                          ; > 7 | BL | DI | EDI |
+   141                                          ; > imm8 － 即値バイト値。記号 imm8 は -128 から +127 までの符号付き数値である
+   142                                          ; == 16 bit register ==
+   143                                          ; AX : acumulator
+   144                                          ; CX : Counter
+   145                                          ; DX : Data
+   146                                          ; BX : Base
+   147                                          ; SP : Stack Pointer
+   148                                          ; BP : Base  Pointer
+   149                                          ; SI : Source      Index
+   150                                          ; DI : Destination Index
+   151                                          ; ES : Extra Segment
+   152                                          ; CS : Code  Segment
+   153                                          ; SS : Stack Segmengt
+   154                                          ; DS : Data  Segmengt
+   155                                          ; FS : no-name
+   156                                          ; GS : no-name
+   157                                  entry:
+   158                                                                  ; [MOV命令 - Tips　IA32（x86）命令一覧　Mから始まる命令　MOV命令](http://softwaretechnique.jp/OS_Development/Tips/IA32_Instructions/MOV.html)
+   159                                                                  ; /r － 命令の ModR/M バイトに、レジスタ・オペランドと R/M オペランドの両方があることを示す.
+   160                                                                  ; Sreg － セグメントレジスタ. ビット割り当ては、ES=0,CS=1,SS=2,DS=3,FS=4,GS=5
+   161                                                                  ; |        | Byte | OpeCode | 命令,              | Description
+   162                                          ; SSに0を代入
+   163                                          ; DSに0を代入
+   164 00000050 B80000                          MOV     AX, 0           ; | B80000 |    3 | 0xB0+rb | MOV r8,   imm8     | imm8をr8に転送します
+   165 00000053 8ED0                            MOV     SS, AX          ; | 8ED0   |    2 | 0x8E /r | MOV Sreg, r/m16※※  | r/m16をセグメントレジスタに転送します ※※　MOV命令のリンク先参照
+   166                                                                  ;                                                | MODR/M = mod + reg + r/m で構成されるのでそのうち
+   167                                                                  ;                                                | r/mが指定する数値が表すレジスタを使用
+   168                                                                  ;                                                | 例)
+   169                                                                  ;                                                | mod=11, reg=???, r/m=000(b)=0(decimal)=AX
+   170                                                                  ;                                                | reg には適当な値が入るのだろうか？
+   171                                                                  ;                                                | 今回)
+   172                                                                  ;                                                | D0= 11 010 000, r/m=000(b)=0(decimal)=AX
+   173 00000055 BC007C                          MOV     SP, 0x7c00
+   174 00000058 8ED8                            MOV     DS, AX          ; 番地指定のとき重要
+   175                                                                  ; どんなメモリの番地指定でもセグメントレジスタを一緒に指定しなくてはならない
+   176                                                                  ; default : DS (data segment)
+   177                                  
+   178                                          ;=====================
+   179                                          ; LOAD DISK
+   180                                          ; ディスクからの読み込み、ディスクへの書き込み、セクタのベリファイ、およびシーク
+   181                                          ;   |       |読み込み時|書き込み時|ベリファイ時|シーク時|
+   182                                          ;   | AH    | 0x02     | 0x03     | 0x04       | 0x0c   |
+   183                                          ;   | AL    | 処理するセクタ数（連続したセクタを処理できる） | 0x01～0xff (1-255, 0)
+   184                                          ;   | CH    | シリンダ番号 & 0xff | シリンダ番号は0x000～0x3ffの範囲で指定 （FDの場合は0x00～0x4f）
+   185                                          ;   | CL    | セクタ番号(bit0-5)  | (シリンダ番号 & 0x300) >> 2 | 0x01～0xffの範囲で指定（FDの場合は0x01～0x12）
+   186                                          ;   | DH    | ヘッド番号 | ヘッド番号は0x00～0xffの範囲で指定 （FDの場合は0x00～0x01）
+   187                                          ;   | DL    | ドライブ番号
+   188                                          ;   | ES:BX | バッファアドレス; （ベリファイ時、シーク時にはこれは参照しない）
+   189                                          ;   | 戻り値：
+   190                                          ;   |   FLAGS.CF | 0 | エラーなし, AH == 0
+   191                                          ;   |            | 1 | エラーあり, AHにエラーコード（リセットファンクションと同じ）
+   192                                          ;   > シークしてからアクセスしなければいけないというわけではない
+   193                                          ;   > HDDへのアクセスの場合,BIOSはパーティションを理解せず,ハード的に1台のデバイスを1ドライブとして扱う事に注意すること.
+   194                                          ;   > パーティション処理が必要なら自分でやるのだ.
+   195                                          ;   > BIOSのせいだったかどうか忘れましたが,FDDのブートセクタをリードするとなぜか0x03～0x0aの8バイトの内容だけが正しく読み込まれません（変なごみが�
+   196                                          ;   > I/Oを自分で制御してFDCをコントロールしたときはこんな変なことは起きません.
+   197 0000005A B82008                          MOV     AX, 0x0820
+   198 0000005D 8EC0                            MOV     ES, AX          ; Buffer Address | ES:BXのES
+   199                                                                  ; > 0x8000～0x81ffの512バイトにはあとでブートセクタの内容を入れようかなと思った
+   200                                                                  ; > なんで0x8000以降を使うことにしたのかというと、特に深い理由はないのですが、
+   201                                                                  ; > メモリマップを見たらこのへんは誰も使っていないようだったので、「はりぼてOS」
+   202                                                                  ; > が使わせてもらうことにしました
+   203                                  
+   204                                  				; C0-H0-S2
+   205 0000005F B500                            MOV     CH, 0           ; シリンダ番号
+   206 00000061 B600                            MOV     DH, 0           ; ヘッド番号
+   207 00000063 B102                            MOV     CL, 2           ; セクタ番号
+   208                                  
+   209 00000065 BE0000                          MOV     SI, 0           ; 失敗回数を数える
+   210                                  
+   211                                  readloop:
+   212 00000068 BE0000                          MOV     SI, 0           ; 失敗回数を数える
+   213                                  
+   214                                  retry:
+   215                                          ; 失敗しても5回はドライブリセットを試す
+   216 0000006B B402                            MOV     AH, 0x02        ; INT 0x13での読み込み指定
+   217 0000006D B001                            MOV     AL, 1           ; 読み込む連続したセクタ数
+   218 0000006F BB0000                          MOV     BX, 0           ; Buffer Address | ES:BXのBX
+   219 00000072 B200                            MOV     DL, 0x00        ; ドライブ番号 Aドライブ
+   220 00000074 CD13                            INT     0x13            ; BIOS call -> エラーの時キャリーフラグが立つ
+   221                                                                  ; [INT(0x13); ディスク関係 - (AT)BIOS - os-wiki](http://oswiki.osask.jp/?%28AT%29BIOS#q5006ed6)
+   222 00000076 7310                            JNC     next            ; Jump if Not CARRY FLAG == 1
+   223                                  
+   224 00000078 83C601                          ADD     SI, 1
+   225 0000007B 83FE05                          CMP     SI, 5
+   226 0000007E 732E                            JAE     error           ; if SI >= 5 then jump to error
+   227                                  
+   228 00000080 B400                            MOV     AH, 0x00
+   229 00000082 B200                            MOV     DL, 0x00        ; ドライブを指定
+   230 00000084 CD13                            INT     0x13            ; ドライブをリセット
+   231 00000086 EBE3                            JMP     retry
+   232                                  
+   233                                  next:
+   234                                          ; 18セクタ(=18*512 Byte)を読み込む
+   235                                  				; ディスクのうちの最初の10*2*18*512=184,320 Byte=180KB を読み込む
+   236                                          ; C0-H0-S3 - C9-H1-S18
+   237                                  				; メモリの 0x08200～0x34fff	をディスクから読み込んだデータでびっしりと埋める
+   238                                          ; メモリ番地0x8200～0xa3ffに読み込まれた
+   239                                          ; > 　ループにする必要はなくて、ディスク読み込みのINT 0x13 のところで、ただALを17にしておけばすむのです
+   240                                          ; > これをループにしたのは、ディスクBIOSの読み込みファンクション(*)の説明のところの「補足」のところを気にしたから
+   241                                          ; > > 処理するセクタ数は0x01～0xffの範囲で指定（0x02以上を指定するときは、連続処理できる条
+   242                                          ; > > 件があるかもしれないので注意-- FDの場合は、たぶん、複数のトラックにはまたがれないし、
+   243                                          ; > > 64KB境界をこえてもいけない、だと思います）
+   244 00000088 8CC0                            MOV     AX, ES          ; ADD ES,0x020 という命令がないのでこうしている
+   245 0000008A 83C020                          ADD     AX, 0x0020      ; 512 / 16 = 0x20
+   246 0000008D 8EC0                            MOV     ES, AX          ; 0x20だけアドレスを進める
+   247                                                                  ; Buffer Register | ES:BX
+   248                                                                  ; ES:BX | ES*0x10 + BX
+   249                                                                  ; よって代わりにBXに512(=0x200)を足してもよい
+   250                                  				; セクタ SECTOR
+   251 0000008F 80C101                          ADD     CL, 1           ; セクタ番号を1増やす
+   252 00000092 80F912                          CMP     CL, 18
+   253 00000095 76D1                            JBE     readloop        ; 18セクタまで読み込んでいなければreadloopへ
+   254                                  
+   255                                  				; ヘッド HEAD
+   256 00000097 B101                            MOV     CL, 1           ; reset SECTOR
+   257 00000099 80C601                          ADD     DH, 1           ; reverse HEAD
+   258 0000009C 80FE02                          CMP     DH, 2
+   259 0000009F 72C7                            JB      readloop				; if (DH < 2) つまり HEADが両面読み込み終えていなければreadloopへ
+   260                                  
+   261                                          ; シリンダ Cylinder
+   262 000000A1 B600                            MOV     DH, 0           ; reset HEAD
+   263 000000A3 80C501                          ADD     CH, 1           ; CYLINDER += 1
+   264 000000A6 80FD0A                          CMP     CH, CYLS				; 定数CYLSと比較
+   265 000000A9 72BD                            JB      readloop				; CYLS分のCYLINDERを読み込み終えていないならばreadloopへ
+   266                                  
+   267                                  fin:
+   268 000000AB F4                              HLT
+   269 000000AC EBFD                            JMP     fin             ; 無限ループ
+   270                                  
+   271                                  error:
+   272 000000AE BE[C400]                        MOV     SI, msg
+   273                                  
+   274                                  putloop:
+   275 000000B1 3E8A04                          MOV     AL, BYTE [DS:SI]; DS*0x10 + SI, DSを明示, ここではDS=0
+   276 000000B4 83C601                          ADD     SI, 1           ; increment stack index
+   277 000000B7 3C00                            CMP     AL, 0           ; compare (<end msg>)
+   278 000000B9 74F0                            JE      fin             ; jump to fin if equal to 0
+   279                                  
+   280                                                                  ; 一文字表示
+   281 000000BB B40E                            MOV     AH, 0x0e        ; AH = 0x0e
+   282 000000BD BB0F00                          MOV     BX, 15          ; BH = 0, BL = <color code>
+   283 000000C0 CD10                            INT     0x10            ; interrupt BIOS
+   284                                                                  ; [INT(0x10); ビデオ関係 - (AT)BIOS - os-wiki](http://oswiki.osask.jp/?%28AT%29BIOS#n5884802)
+   285 000000C2 EBED                            JMP     putloop
+   286                                  
+   287                                  msg:
+   288 000000C4 0A0A                            DB      0x0a, 0x0a
+   289 000000C6 6C6F6164206572726F-             DB      "load error"
+   290 000000CF 72                 
+   291 000000D0 0A                              DB      0x0a
+   292 000000D1 00                              DB      0                   ; end msg
+   293                                  
+   294                                          ;RESB    0x7dfe-($-$$)      ; これだとエラーが出た。。。
+   295                                                                      ; セクタサイズ 512 Byte なので 510 Byte目までを埋めたいときは
+   296                                                                      ; 0x1fe - ($-$$) としてやればいい
+   297                                                                      ; > you can tell how far into the section you are by using ($-$$)
+   298                                                                      ; > [3.5 Expressions - NASM - The Netwide Assembler](https://www.nasm.us/doc/nasmdoc3.html#section-3.5)
+   299 000000D2 <res 0000012C>                  RESB    0x1fe-($-$$)        ; 現在の場所から 0x1fd (0x1fe の直前)
+   300          ******************       warning: uninitialized space declared in .text section: zeroing
+   301                                                                      ; まで(残りの未使用領域)を0で埋める
+   302                                                                      ; (naskでは0で初期化するみたいだがnasm
+   303                                                                      ; だと初期化しない) 
+   304                                   
+   305                                          ;=======================================================================
+   306                                          ; END BS_BootCode       ; Name             | Offset              | Byte | Description
+   307 000001FE 55AA                            DB      0x55, 0xaa      ; BS_BootSign      | 0x7dfe-0x7dff       | 510  |
+   308                                  
