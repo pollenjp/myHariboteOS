@@ -1,32 +1,64 @@
-     1                                  ; haribote-os
-     2                                  ; TAB=4
-     3                                  
-     4                                  ; BOOT_INFO関係
-     5                                  CYLS    EQU     0x0ff0      ; ブートセクタが設定する
-     6                                  LEDS    EQU     0x0ff1
-     7                                  VMODE   EQU     0x0ff2      ; 色数に関する情報（何ビットカラーか）
-     8                                  SCRNX   EQU     0x0ff4      ; 解像度X (screen x)
-     9                                  SCRNY   EQU     0x0ff6      ; 解像度Y (screen y)
-    10                                  VRAM    EQU     0x0ff8      ; グラフィックバッファの開始番地
-    11                                  
-    12                                          ORG     0xc200      ; 0xc200 <- 0x8000 + 0x4200
-    13                                                              ; Where on memory this program will be loaded
+     1                                  ; BOOT_INFO関係
+     2                                  ; > メモしている場所は0x0ff0番地周辺ですが、メモリマップによるとこのへんも誰にも使われていないようでした
+     3                                  CYLS    EQU     0x0ff0      ; ブートセクタが設定する
+     4                                  LEDS    EQU     0x0ff1      ; LED State
+     5                                  VMODE   EQU     0x0ff2      ; Video MODE | 色数に関する情報（何ビットカラーか）
+     6                                  SCRNX   EQU     0x0ff4      ; SCReeN X   | 解像度X
+     7                                  SCRNY   EQU     0x0ff6      ; SCReeN Y   | 解像度Y
+     8                                  VRAM    EQU     0x0ff8      ; Video RAM  | グラフィックバッファの開始番地
+     9                                  
+    10                                          ;=======================================================================
+    11                                          ORG     0xc200      ; 0xc200 = 0x8000 + 0x4200
+    12                                                              ; イメージファイルの 0x4200 アドレス番目に書き込まれている
+    13                                                              ; また,先で 0x8000 以降を使うことに決めている
     14                                  
-    15 00000000 B013                            MOV     AL, 0x13    ; VGA graphics, 320x200x8bit
-    16 00000002 B400                            MOV     AH, 0x00
-    17 00000004 CD10                            INT     0x10
-    18                                  
-    19 00000006 C606F20F08                      MOV     BYTE [VMODE], 8         ; 画面モードをメモする
-    20 0000000B C706F40F4001                    MOV     WORD [SCRNX], 320
-    21 00000011 C706F60FC800                    MOV     WORD [SCRNY], 200
-    22 00000017 66C706F80F00000A00              MOV     DWORD [VRAM], 0x000a0000
-    23                                  
-    24                                  ; LED state on keyboardをBIOSから教えてもらう
-    25                                  
-    26 00000020 B402                            MOV     AH, 0x02
-    27 00000022 CD16                            INT     0x16        ; keyboard BIOS
-    28 00000024 A2F10F                          MOV     [LEDS], AL
-    29                                  
-    30                                  fin:
-    31 00000027 F4                              HLT
-    32 00000028 EBFD                            JMP     fin
+    15                                          ;=======================================================================
+    16                                          ; [INT(0x10); ビデオ関係](http://oswiki.osask.jp/?%28AT%29BIOS#n5884802)
+    17                                          ; ビデオモード設定
+    18                                          ;   AH = 0x00;
+    19                                          ;   AL = モード： (マイナーな画面モードは省略しています)
+    20                                          ;     0x03：16色テキスト、80x25
+    21                                          ;     0x12：VGAグラフィックス、640x480x4bitカラー、独自プレーンアクセス
+    22                                          ;     0x13：VGAグラフィックス、320x200x8bitカラー、パックドピクセル
+    23                                          ;     0x6a：拡張VGAグラフィックス、800x600x4bitカラー、独自プレーンアクセス（ビデオカードによってはサポートされない）
+    24                                          ;   戻り値：なし
+    25 00000000 B013                            MOV     AL, 0x13    ; VGA graphics, 320x200x(8 bit color)
+    26 00000002 B400                            MOV     AH, 0x00
+    27 00000004 CD10                            INT     0x10
+    28                                  
+    29                                          ;=======================================================================
+    30                                          ; 画面モードをメモする
+    31 00000006 C606F20F08                      MOV     BYTE [VMODE], 8           ; Video MODE
+    32 0000000B C706F40F4001                    MOV     WORD [SCRNX], 320         ; SCReeN X
+    33 00000011 C706F60FC800                    MOV     WORD [SCRNY], 200         ; SCReeN Y
+    34 00000017 66C706F80F00000A00              MOV     DWORD [VRAM], 0x000a0000  ; Video RAM
+    35                                                                            ; > VRAMは0xa0000～0xaffffの64KBです。厳密に言うと、320x200=64000なので、62.5KBですが.
+    36                                                                            ;
+    37                                                                            ; > [VRAM]に 0xa0000 を入れているのですが、PC の世界で VRAM というのはビデオラムのことで
+    38                                                                            ; > 「video RAM」と書き、画面用のメモリのことです。このメモリは、もちろんデータを記憶することがい
+    39                                                                            ; > つも通りできます。しかしVRAMは普通のメモリ以上の存在で、それぞれの番地が画面上の画素に対応
+    40                                                                            ; > していて、これを利用することで画面に絵を出すことができるのです。
+    41                                  
+    42                                          ;=======================================================================
+    43                                          ; [INT(0x16); キーボード関係 - (AT)BIOS - os-wiki](http://oswiki.osask.jp/?%28AT%29BIOS#lb9f3e72)
+    44                                          ; キーロック＆シフト状態取得
+    45                                          ;   AH = 0x02;
+    46                                          ;   戻り値：
+    47                                          ;   AL == 状態コード：
+    48                                          ;     bit0：右シフト
+    49                                          ;     bit1：左シフト
+    50                                          ;     bit2：Ctrl
+    51                                          ;     bit3：Alt
+    52                                          ;     bit4：Scrollロック
+    53                                          ;     bit5：Numロック
+    54                                          ;     bit6：Capsロック
+    55                                          ;     bit7：Insertモード
+    56                                          ; BIOS (16 bit mode) から情報を取得
+    57 00000020 B402                            MOV     AH, 0x02    ; キーロック＆シフト状態取得
+    58 00000022 CD16                            INT     0x16        ; Keyboard BIOS
+    59 00000024 A2F10F                          MOV     [LEDS], AL  ; LED State
+    60                                  
+    61                                  fin:
+    62 00000027 F4                              HLT
+    63 00000028 EBFD                            JMP     fin
+    64                                  

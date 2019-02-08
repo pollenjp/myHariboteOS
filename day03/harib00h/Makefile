@@ -1,26 +1,51 @@
-default:
-	make img
+OSNAME := haribote
 
-ipl10.bin : ipl10.asm Makefile
-	nasm ipl10.asm -o ipl10.bin -l ipl10.lst
+.DEFAULT_GOAL : all
+.PHONY : all
+all : img
 
-haribote.sys : haribote.asm Makefile
-	nasm haribote.asm -o haribote.sys -l haribote.lst
+#===============================================================================
+ipl10.bin : ipl10.asm
+${OSNAME}.sys : ${OSNAME}.asm
 
-haribote.img : ipl10.bin haribote.sys Makefile
-	mformat -f 1440 -C -B ipl10.bin -i haribote.img ::
-	mcopy haribote.sys -i haribote.img ::
+%.bin : %.asm
+	nasm $^ -o $@ -l $*.lst
 
+%.sys : %.asm
+	nasm $^ -o $@ -l $*.lst
+
+${OSNAME}.img : ipl10.bin ${OSNAME}.sys
+# mtools
+#  - [Mtools - Wikipedia](https://en.wikipedia.org/wiki/Mtools)
+#  - [2.2 Drive letters - Mtools 4.0.23](https://www.gnu.org/software/mtools/manual/mtools.html#drive-letters)
+#  - [mtoolsの使い方が知りたい - ITmedia エンタープライズ](http://www.itmedia.co.jp/help/tips/linux/l0317.html)
+#
+# 1440KBのフロッピーディスクに書き込む
+	mformat -f 1440 -C -B ipl10.bin -i $@ ::
+# OS本体をイメージに書き込む
+	mcopy -i $@ ${OSNAME}.sys ::
+
+#===============================================================================
+.PHONY : asm
 asm :
-	make -r ipl10.bin
+	make ipl10.bin
 
+.PHONY : img
 img :
-	make -r haribote.img
+	make ${OSNAME}.img 
 
+.PHONY : run
 run :
 	make img
-	qemu-system-i386 -fda haribote.img
+	qemu-system-i386 -fda ${OSNAME}.img
 
+#===============================================================================
+.PHONY : clean
+clean :
+# lstは残しておいてもいいと思うのでcleanに入れていない
+	@rm *.img *.bin *.sys
+
+.PHONY : debug
 debug:
 	make img
 	qemu-system-i386 -fda haribote.img -gdb tcp::10000 -S
