@@ -19,7 +19,7 @@
 ; > [ソフトウェア的用途区分 - (AT)memorymap - os-wiki](http://oswiki.osask.jp/?%28AT%29memorymap#qd4cd666)
 
 CYLS    EQU     10              ; どこまで読み込むか (CYLinderS)
-																; EQUal 定数宣言(nasm)
+                                ; EQUal 定数宣言(nasm)
 
         ;=======================================================================
         ; このプログラムがメモリ上のどこによみこまれるのか
@@ -199,7 +199,7 @@ entry:
                                 ; > メモリマップを見たらこのへんは誰も使っていないようだったので、「はりぼてOS」
                                 ; > が使わせてもらうことにしました
 
-				; C0-H0-S2
+        ; C0-H0-S2
         MOV     CH, 0           ; シリンダ番号
         MOV     DH, 0           ; ヘッド番号
         MOV     CL, 2           ; セクタ番号
@@ -230,9 +230,9 @@ retry:
 
 next:
         ; 18セクタ(=18*512 Byte)を読み込む
-				; ディスクのうちの最初の10*2*18*512=184,320 Byte=180KB を読み込む
+        ; ディスクのうちの最初の10*2*18*512=184,320 Byte=180KB を読み込む
         ; C0-H0-S3 - C9-H1-S18
-				; メモリの 0x08200～0x34fff	をディスクから読み込んだデータでびっしりと埋める
+        ; メモリの 0x08200～0x34fff をディスクから読み込んだデータでびっしりと埋める
         ; メモリ番地0x8200～0xa3ffに読み込まれた
         ; > 　ループにする必要はなくて、ディスク読み込みのINT 0x13 のところで、ただALを17にしておけばすむのです
         ; > これをループにしたのは、ディスクBIOSの読み込みファンクション(*)の説明のところの「補足」のところを気にしたから
@@ -245,22 +245,22 @@ next:
                                 ; Buffer Register | ES:BX
                                 ; ES:BX | ES*0x10 + BX
                                 ; よって代わりにBXに512(=0x200)を足してもよい
-				; セクタ SECTOR
+        ; セクタ SECTOR
         ADD     CL, 1           ; セクタ番号を1増やす
         CMP     CL, 18
         JBE     readloop        ; 18セクタまで読み込んでいなければreadloopへ
 
-				; ヘッド HEAD
+        ; ヘッド HEAD
         MOV     CL, 1           ; reset SECTOR
         ADD     DH, 1           ; reverse HEAD
         CMP     DH, 2
-        JB      readloop				; if (DH < 2) つまり HEADが両面読み込み終えていなければreadloopへ
+        JB      readloop        ; if (DH < 2) つまり HEADが両面読み込み終えていなければreadloopへ
 
         ; シリンダ Cylinder
         MOV     DH, 0           ; reset HEAD
         ADD     CH, 1           ; CYLINDER += 1
-        CMP     CH, CYLS				; 定数CYLSと比較
-        JB      readloop				; CYLS分のCYLINDERを読み込み終えていないならばreadloopへ
+        CMP     CH, CYLS        ; 定数CYLSと比較
+        JB      readloop        ; CYLS分のCYLINDERを読み込み終えていないならばreadloopへ
 
 fin:
         HLT
