@@ -14,10 +14,6 @@ helloos.img : ipl.bin
 
 .PHONY : asm
 asm :
-# -r, --no-builtin-rules
-#     Eliminate use of the built-in implicit rules.
-#     Also clear out the default list of suffixes for suffix rules.
-#	make --no-builtin-rules ipl.bin
 	make ipl.bin
 
 .PHONY : img
@@ -27,7 +23,7 @@ img :
 .PHONY : run
 run :
 	make img
-	qemu-system-i386 helloos.img
+	qemu-system-i386 -fda helloos.img
 
 .PHONY : clean
 clean :
