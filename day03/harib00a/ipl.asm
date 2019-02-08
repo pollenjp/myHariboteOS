@@ -204,7 +204,7 @@ entry:
         MOV     AH, 0x02        ; INT 0x13での読み込み指定
         MOV     AL, 1           ; 読み込む連続したセクタ数
         MOV     BX, 0           ; Buffer Address | ES:BXのBX
-        MOV     DL, 0x00        ; ドライブ番号
+        MOV     DL, 0x00        ; ドライブ番号 Aドライブ
         INT     0x13            ; BIOS call -> エラーの時キャリーフラグが立つ
                                 ; [INT(0x13); ディスク関係 - (AT)BIOS - os-wiki](http://oswiki.osask.jp/?%28AT%29BIOS#q5006ed6)
         JC      error           ; Jump if CARRY FLAG == 1
