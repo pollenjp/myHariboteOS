@@ -3,6 +3,7 @@ OSNAME := haribote
 .DEFAULT_GOAL : all
 .PHONY : all
 all : img
+SAVE_DIR := ./ref
 
 #===============================================================================
 ipl10.bin    : ipl10.asm
@@ -10,7 +11,7 @@ asmhead.bin  : asmhead.asm
 nasmfunc.o   : nasmfunc.asm
 
 %.bin : %.asm
-	nasm $^ -o $@ -l $*.lst
+	nasm $^ -o $@ -l ${SAVE_DIR}/$*.lst
 
 %.o : %.asm
 # https://nasm.us/doc/nasmdoc2.html
