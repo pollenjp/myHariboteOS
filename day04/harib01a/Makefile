@@ -11,6 +11,7 @@ asmhead.bin  : asmhead.asm
 nasmfunc.o   : nasmfunc.asm
 
 %.bin : %.asm
+	@if [ ! -d ${SAVE_DIR} ]; then mkdir ${SAVE_DIR}; fi
 	nasm $^ -o $@ -l ${SAVE_DIR}/$*.lst
 
 %.o : %.asm
