@@ -11,6 +11,8 @@ asmhead.bin  : asmhead.asm
 nasmfunc.o   : nasmfunc.asm
 
 %.bin : %.asm
+	# アットマーク(@): アットマークがついたコマンドは、make 実行時にコマンド名を表示しない
+	@if [ ! -d ${SAVE_DIR} ]; then mkdir ${SAVE_DIR}; fi
 	nasm $^ -o $@ -l ${SAVE_DIR}/$*.lst
 
 %.o : %.asm
