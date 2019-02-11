@@ -9,11 +9,11 @@ _io_hlt:  ; void _io_hlt(void);
 
 ;=======================================================================================================================
 _write_mem8:  ; void _write_mem8(int addr, int data);
-; Parameters
-; addr に直接 int 型の  data を代入
-; | addr | int | メモリアドレス
-; | data | int | 代入したい数値
-; Return
+; int型 (4 Byte) の data を上位3Byteを切り落とし 1 Byte (8 bit) にして addr 番地に代入
+; | Parameters
+; | addr | int (4 Byte) | メモリアドレス
+; | data | int (4 Byte) | 代入したい値, 下位1Byteのみ代入
+; | Return
 ;===================
 ; > 「30日でできる!OS自作入門」 p69
 ; > C言語には直接メモリの番地を指定して書き込むための命令がありません(*).
@@ -51,8 +51,10 @@ _write_mem8:  ; void _write_mem8(int addr, int data);
 ; 自由に使っていいレジスタは EAX,ECX,EDX のみで他のレジスタは読み取り専用
 ; EAX,ECX,EDX 以外のレジスタは,
 ; > C言語部分の機械語が、C言語にとって大事な値を記憶させるために使っているからです.
-        MOV     ECX, [ESP+4]        ; [ESP+4]に (int)addr が入っている
-        MOV     AL, [ESP+8]         ; [ESP+8]に (int)data が入っている
-        MOV     [ECX], AL
+																		; [ESP]  , ..., [ESP+3] に 関数の戻り先アドレス(32bit)が入っている.
+        MOV     ECX, DWORD [ESP+4]  ; [ESP+4], ..., [ESP+7] に (int)addr が入っている. アドレッシングは32bit.
+        MOV     AL,  BYTE  [ESP+8]  ; [ESP+8], ..., [ESP+11]に (int)data が入っている.
+																		; int型(4Byte)のdataを上位3Byteを切り落とし1Byte(8bit)にしてALに代入
+        MOV     BYTE [ECX], AL
         RET
 
