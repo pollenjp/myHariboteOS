@@ -1,4 +1,3 @@
-/* harib.ld */
 OUTPUT_FORMAT("binary");
 
 SECTIONS
