@@ -8,6 +8,8 @@ void HariMain(void)
 {
   int i;
   for (i = 0xa0000; i <= 0xaffff; i++){
+    // > VRAMは0xa0000～0xaffffの64KBです。厳密に言うと、320x200=64000なので、62.5KBですが.
+    // > [INT(0x10); ビデオ関係](http://oswiki.osask.jp/?%28AT%29BIOS#n5884802)
     _write_mem8(i, 15);
   }
 
