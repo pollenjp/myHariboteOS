@@ -1,5 +1,4 @@
 extern void _io_hlt(void);
-extern void _write_mem8(int addr, int data);
 
 void HariMain(void)
 // > 「30日でできる!OS自作入門」 p66
