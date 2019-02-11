@@ -12,7 +12,7 @@ void HariMain(void)
     // > [INT(0x10); ビデオ関係](http://oswiki.osask.jp/?%28AT%29BIOS#n5884802)
     // 　なおこのグラフィックバッファの開始番地 0xaffff は `asmhead.asm` ないで メモリアドレスを指す変数 VRAM(=0x0ff8)
     // に保存されている. (`DWORD [VRAM]`)
-    _write_mem8(i, 15);
+    _write_mem8(/* int addr= */ i, /* int data = */ 15);  // 第2引数dataは 0-15 の値を期待するものである.
   }
 
   for(;;){
