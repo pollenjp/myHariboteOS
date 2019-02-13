@@ -47,6 +47,9 @@ _write_mem8:  ; void _write_mem8(int addr, int data);
 ;    > [プログラミング序論　page10](http://www.ibe.kagoshima-u.ac.jp/edu/gengo0/p10.html)
 ; 参考: [プログラミング序論　page10](http://www.ibe.kagoshima-u.ac.jp/edu/gengo0/p10.html)
 ;===================
+; > 「熱血アセンブラ入門」 p294
+; > i386では引数もスタック経由で渡される
+;===================
 ; > 「30日でできる!OS自作入門」 p70
 ; 自由に使っていいレジスタは EAX,ECX,EDX のみで他のレジスタは読み取り専用
 ; EAX,ECX,EDX 以外のレジスタは,

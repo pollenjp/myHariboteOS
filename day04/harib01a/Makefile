@@ -3,18 +3,32 @@ OSNAME := haribote
 .DEFAULT_GOAL : all
 .PHONY : all
 all : img
-SAVE_DIR := ./ref
+DEBUG_DIR := ./debug
+OBJDUMP_FLAGS := --full-contents --all-headers --target=binary --architecture=i386:intel --disassemble-all
+# objdump
+# -s, --full-contents        | Display the full contents of all sections requested
+# -d, --disassemble          | Display assembler contents of executable sections
+# -D, --disassemble-all      | Display assembler contents of all sections
+# -b, --target=BFDNAME       | ターゲットのオブジェクト形式を BFDNAME と指定する
+# -m, --architecture=MACHINE | ターゲットのアーキテクチャを MACHINE と指定する
+#                            | x86-64 | Disassemble in 64bit mode
+#                            | i386   | Disassemble in 32bit mode
+#                            | i8086  | Disassemble in 16bit mode
+# --endian=little            | リトルエンディアンと見なして逆アセンブルする
+# [Linux徹底詳解再訪 続報・その１ - Wataru's memo(2004-04-29)](http://memo.wnishida.com/?date=20040429)
+
 
 #===============================================================================
 ipl10.bin    : ipl10.asm
 asmhead.bin  : asmhead.asm
 nasmfunc.o   : nasmfunc.asm
 
-%.bin : %.asm
-	@if [ ! -d ${SAVE_DIR} ]; then mkdir ${SAVE_DIR}; fi
-	nasm $^ -o $@ -l ${SAVE_DIR}/$*.lst
+%.bin : %.asm 
+	@make make-debug-dir
+	nasm $^ -o $@ -l ${DEBUG_DIR}/$*.lst
 
 %.o : %.asm
+	@make make-debug-dir
 # https://nasm.us/doc/nasmdoc2.html
 # -f <format> | 
 #             | elf | Executable and Linkable Format Object Files
@@ -25,20 +39,11 @@ nasmfunc.o   : nasmfunc.asm
 #             |     | > コンパイルして出来た実行可能ファイルはELFファイルです
 #             |     | > [ELF入門 - 情弱ログ](http://sugawarayusuke.hatenablog.com/entry/2017/04/09/213133)
 # -o <output> |
-# -g 		  | Causes nasm to generate debug information in selected format.
-	nasm -g -f elf $^ -o $@
+	nasm -f elf $^ -o $@ -l ${DEBUG_DIR}/$*.lst
 
 BOOTPACK_FILES := bootpack.c nasmfunc.o
 bootpack.hrb : ${BOOTPACK_FILES} os.lds
-# Cファイルをリンカスクリプトを用いてコンパイル
-# -march=i486        | Intel CPU 486用にコンパイルすることを指定. 「30日でできる!OS自作入門」 p70-71 に詳述.
-# -m32               |
-# -nostdlib          |
-# -T <linker-script> | file.lds | Binutils LD Linker Script, 「はりぼてOS」の形式を指定
-	gcc -march=i486 -m32 -nostdlib \
-		-T os.lds \
-		-o $@ \
-		${BOOTPACK_FILES}
+	@make make-debug-dir
 # > 「30日でできる!OS自作入門」 p65
 # > そんなわけで、実はbimファイルは「本来の状態ではない仮の形式」なので、完成品ではないのです。
 # > これは全部くっつけて機械語としてまとめただけで、実際に使うためには、それぞれのOSが必要とする
@@ -56,11 +61,41 @@ bootpack.hrb : ${BOOTPACK_FILES} os.lds
 # > だから486用モードでも16ビットレジスタだけを使っていれば、8086でも動く機械語になります。
 # > CPUの家系図(インテルの場合)|8086->80186->286->386->486->Pentium->PentiumPro->PentiumII->PentiumIII->Pentium4->...
 # >                            | 16 bit CPU     | 32 bit CPU
+#
+# Cファイルをリンカスクリプトを用いてコンパイル
+# -march=i486        | Intel CPU 486用にコンパイルすることを指定. 「30日でできる!OS自作入門」 p70-71 に詳述.
+# -m32               | > 32bit アプリケーションの作成は -m32 オプションをつけることで可能
+#                    | > [「C」64bit のGCC で 32bit アプリケーションを作成する環境構築 ( CentOS 6.4 ) - プログラム日記](http://a4dosanddos.hatenablog.com/entry/2015/09/19/131052)
+# -nostdlib          |
+# -g                 | generates debug information to be used by GDB debugger
+#                    | > | -g0 | no debug information
+#                    | > | -g1 | minimal debug information
+#                    | > | -g  | default debug information
+#                    | > | -g3 | maximal debug information
+#                    | > [gcc -g option flag (debug)](https://www.rapidtables.com/code/linux/gcc/gcc-g.html)
+#                    |
+# -O0                | > 最適化を無効にします。デバッグやコンパイルをすばやく行うには、このオプションを使用します。
+#                    | > [最適化オプションのまとめ](http://wwweic.eri.u-tokyo.ac.jp/computer/manual/altix/compile/Fortran/Intel_Fdoc91/main_for/mergedProjects/optaps_for/common/optaps_lev_opts.htm)
+#                    | -g0 | no debug information
+#                    | -g1 | minimal debug information
+#                    | -g  | default debug information
+#                    | -g3 | maximal debug information
+#                    |
+# -T <linker-script> | file.lds | Binutils LD Linker Script, 「はりぼてOS」の形式を指定
+	gcc -march=i486 -m32 -nostdlib -g -O0 \
+		-T os.lds \
+		-o $@ \
+		${BOOTPACK_FILES}
+# disassemble する
+	objdump ${OBJDUMP_FLAGS} $@ > ${DEBUG_DIR}/$@.dasm
 
 ${OSNAME}.sys : asmhead.bin bootpack.hrb
+%.sys :
+	@make make-debug-dir
 # asmhead.bin => bootpack.hrb の順にバイナリを並べる
 # 拡張子 .hrb はおそらくHaRiBoteの略
 	cat $^ > $@
+	objdump ${OBJDUMP_FLAGS} $@ > ${DEBUG_DIR}/$@.dasm
 
 ${OSNAME}.img : ipl10.bin ${OSNAME}.sys
 # mtools
@@ -86,6 +121,10 @@ img :
 run :
 	make img
 	qemu-system-i386 -fda ${OSNAME}.img
+
+.PHONY : make-debug-dir
+make-debug-dir :
+	@if [ ! -d ${DEBUG_DIR} ]; then mkdir ${DEBUG_DIR}; fi
 
 #===============================================================================
 .PHONY : clean
