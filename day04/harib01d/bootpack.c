@@ -12,10 +12,7 @@ void HariMain(void)
     // > [INT(0x10); ビデオ関係](http://oswiki.osask.jp/?%28AT%29BIOS#n5884802)
     // 　なおこのグラフィックバッファの開始番地 0xaffff は `asmhead.asm` ないで メモリアドレスを指す変数 VRAM(=0x0ff8)
     // に保存されている. (`DWORD [VRAM]`)
-                        //                                  | 擬似アセンブリコード(おそらく)
-    *(p+i) = i & 0x0f;  // 0-15 の値を期待するものである.   | MOV ECX,p
-                        //                                  | ADD ECX,i
-                        //                                  | MOV BYTE [ECX],(i & 0x0f)
+    *(p+i) = i & 0x0f;  // 0-15 の値を期待するものである.
   }
 
   for(;;){
