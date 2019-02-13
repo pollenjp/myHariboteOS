@@ -1,0 +1,73 @@
+
+bootpack.hrb:     ファイル形式 binary
+bootpack.hrb
+アーキテクチャ: UNKNOWN!, フラグ 0x00000000:
+
+開始アドレス 0x00000000
+
+セクション:
+索引名          サイズ      VMA       LMA       File off  Algn
+  0 .data         0000007d  00000000  00000000  00000000  2**0
+                  CONTENTS, ALLOC, LOAD, DATA
+SYMBOL TABLE:
+シンボルがありません
+
+
+セクション .data の内容:
+ 0000 00000100 48617269 00000000 00003100  ....Hari......1.
+ 0010 00000000 7d000000 000000e9 10000000  ....}...........
+ 0020 00000000 00000000 00000000 00000000  ................
+ 0030 5589e583 ec18c745 f000000a 00c745f4  U......E......E.
+ 0040 00000000 eb138b55 f48b45f0 01d08b55  .......U..E....U
+ 0050 f483e20f 8810ff45 f4817df4 ffff0000  .......E..}.....
+ 0060 7ee4e809 000000eb f9669066 90669090  ~........f.f.f..
+ 0070 f4c38b4c 24048a44 24088801 c3        ...L$..D$....   
+
+セクション .data の逆アセンブル:
+
+00000000 <.data>:
+   0:	00 00                	add    BYTE PTR [eax],al
+   2:	01 00                	add    DWORD PTR [eax],eax
+   4:	48                   	dec    eax
+   5:	61                   	popa   
+   6:	72 69                	jb     0x71
+   8:	00 00                	add    BYTE PTR [eax],al
+   a:	00 00                	add    BYTE PTR [eax],al
+   c:	00 00                	add    BYTE PTR [eax],al
+   e:	31 00                	xor    DWORD PTR [eax],eax
+  10:	00 00                	add    BYTE PTR [eax],al
+  12:	00 00                	add    BYTE PTR [eax],al
+  14:	7d 00                	jge    0x16
+  16:	00 00                	add    BYTE PTR [eax],al
+  18:	00 00                	add    BYTE PTR [eax],al
+  1a:	00 e9                	add    cl,ch
+  1c:	10 00                	adc    BYTE PTR [eax],al
+	...
+  2e:	00 00                	add    BYTE PTR [eax],al
+  30:	55                   	push   ebp
+  31:	89 e5                	mov    ebp,esp
+  33:	83 ec 18             	sub    esp,0x18
+  36:	c7 45 f0 00 00 0a 00 	mov    DWORD PTR [ebp-0x10],0xa0000
+  3d:	c7 45 f4 00 00 00 00 	mov    DWORD PTR [ebp-0xc],0x0
+  44:	eb 13                	jmp    0x59
+  46:	8b 55 f4             	mov    edx,DWORD PTR [ebp-0xc]
+  49:	8b 45 f0             	mov    eax,DWORD PTR [ebp-0x10]
+  4c:	01 d0                	add    eax,edx
+  4e:	8b 55 f4             	mov    edx,DWORD PTR [ebp-0xc]
+  51:	83 e2 0f             	and    edx,0xf
+  54:	88 10                	mov    BYTE PTR [eax],dl
+  56:	ff 45 f4             	inc    DWORD PTR [ebp-0xc]
+  59:	81 7d f4 ff ff 00 00 	cmp    DWORD PTR [ebp-0xc],0xffff
+  60:	7e e4                	jle    0x46
+  62:	e8 09 00 00 00       	call   0x70
+  67:	eb f9                	jmp    0x62
+  69:	66 90                	xchg   ax,ax
+  6b:	66 90                	xchg   ax,ax
+  6d:	66 90                	xchg   ax,ax
+  6f:	90                   	nop
+  70:	f4                   	hlt    
+  71:	c3                   	ret    
+  72:	8b 4c 24 04          	mov    ecx,DWORD PTR [esp+0x4]
+  76:	8a 44 24 08          	mov    al,BYTE PTR [esp+0x8]
+  7a:	88 01                	mov    BYTE PTR [ecx],al
+  7c:	c3                   	ret    
