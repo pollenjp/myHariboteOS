@@ -68,4 +68,8 @@ cat asmhead.bin bootpack.hrb > haribote.sys
   5c:	7e e1                	jle    0x3f
   5e:	e8 0d 00 00 00       	call   0x70
   63:	eb f9                	jmp    0x5e
+  30:	55                   	push   ebp
+  31:	89 e5                	mov    ebp,esp
+  33:	83 ec 18             	sub    esp,0x18
 ```
+
