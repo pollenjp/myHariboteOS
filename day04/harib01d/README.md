@@ -1,4 +1,4 @@
-# day04 ポインタに挑戦 - harib01c
+# day04 ポインタの応用(1) - harib01d
 
 ## imgファイル作成
 
@@ -52,20 +52,38 @@ cat asmhead.bin bootpack.hrb > haribote.sys
   30:	55                   	push   ebp
   31:	89 e5                	mov    ebp,esp
   33:	83 ec 18             	sub    esp,0x18
-  36:	c7 45 f4 00 00 0a 00 	mov    DWORD PTR [ebp-0xc],0xa0000    # initialize i = 0xa0000
                                                                   # ebp-0xc  : i
                                                                   # ebp-0x10 : p
-  3d:	eb 16                	jmp    0x55
-  3f:	8b 45 f4             	mov    eax,DWORD PTR [ebp-0xc]        # p = (char *) i; |
-  42:	89 45 f0             	mov    DWORD PTR [ebp-0x10],eax       # ----------------|
-  45:	8b 45 f4             	mov    eax,DWORD PTR [ebp-0xc]        # i & 0xf |
-  48:	83 e0 0f             	and    eax,0xf                        # --------|
-  4b:	88 c2                	mov    dl,al                          # *p = i & 0x0f |
-  4d:	8b 45 f0             	mov    eax,DWORD PTR [ebp-0x10]       #               |
-  50:	88 10                	mov    BYTE PTR [eax],dl              # --------------|
-  52:	ff 45 f4             	inc    DWORD PTR [ebp-0xc]            # i++
-  55:	81 7d f4 ff ff 0a 00 	cmp    DWORD PTR [ebp-0xc],0xaffff    # forの条件判定部分
-  5c:	7e e1                	jle    0x3f
-  5e:	e8 0d 00 00 00       	call   0x70
-  63:	eb f9                	jmp    0x5e
+  36:	c7 45 f0 00 00 0a 00 	mov    DWORD PTR [ebp-0x10],0xa0000   # initialize p = 0xa0000
+  3d:	c7 45 f4 00 00 00 00 	mov    DWORD PTR [ebp-0xc],0x0        # initialize i = 0x0
+  44:	eb 13                	jmp    0x59
+                                                                  # *(p+i) = i & 0x0f;  |
+  46:	8b 55 f4             	mov    edx,DWORD PTR [ebp-0xc]        # p+i                 |
+  49:	8b 45 f0             	mov    eax,DWORD PTR [ebp-0x10]       #                     |
+  4c:	01 d0                	add    eax,edx                        #                     |
+  4e:	8b 55 f4             	mov    edx,DWORD PTR [ebp-0xc]        # i & 0x0f            |
+  51:	83 e2 0f             	and    edx,0xf                        #                     |
+  54:	88 10                	mov    BYTE PTR [eax],dl              # *(p+i) = i & 0x0f --|
+  56:	ff 45 f4             	inc    DWORD PTR [ebp-0xc]            # i++
+  59:	81 7d f4 ff ff 00 00 	cmp    DWORD PTR [ebp-0xc],0xffff     # forの条件判定部分
+  60:	7e e4                	jle    0x46
+  62:	e8 09 00 00 00       	call   0x70
+  67:	eb f9                	jmp    0x62
+                                                                  # ebp-0xc  : i
+                                                                  # ebp-0x10 : p
+  36:	c7 45 f0 00 00 0a 00 	mov    DWORD PTR [ebp-0x10],0xa0000   # initialize p = 0xa0000
+  3d:	c7 45 f4 00 00 00 00 	mov    DWORD PTR [ebp-0xc],0x0        # initialize i = 0x0
+  44:	eb 13                	jmp    0x59
+                                                                  # *(p+i) = i & 0x0f;  |
+  46:	8b 55 f4             	mov    edx,DWORD PTR [ebp-0xc]        # p+i                 |
+  49:	8b 45 f0             	mov    eax,DWORD PTR [ebp-0x10]       #                     |
+  4c:	01 d0                	add    eax,edx                        #                     |
+  4e:	8b 55 f4             	mov    edx,DWORD PTR [ebp-0xc]        # i & 0x0f            |
+  51:	83 e2 0f             	and    edx,0xf                        #                     |
+  54:	88 10                	mov    BYTE PTR [eax],dl              # *(p+i) = i & 0x0f --|
+  56:	ff 45 f4             	inc    DWORD PTR [ebp-0xc]            # i++
+  59:	81 7d f4 ff ff 00 00 	cmp    DWORD PTR [ebp-0xc],0xffff     # forの条件判定部分
+  60:	7e e4                	jle    0x46
+  62:	e8 09 00 00 00       	call   0x70
+  67:	eb f9                	jmp    0x62
 ```
