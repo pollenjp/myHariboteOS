@@ -29,7 +29,7 @@ $ make run
   }
 ```
 
-逆アセンブル結果(`bootpack.hrb.dasm`)
+逆アセンブル結果(`./debug/bootpack.hrb.dasm`)
 
 ```
   30:	55                   	push   ebp                                # 現在のベースポインタ(dbp)の中身をスタックに保存(同時にespもdecrement)
