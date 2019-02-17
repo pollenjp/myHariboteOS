@@ -17,7 +17,8 @@ $ make run
 
 ## メモリに書き込む箇所の逆アセンブル
 
-`bootpack.c`の`HariMain()`の中の以下の箇所の逆アセンブル
+
+### `bootpack.c`の`HariMain()`の中の逆アセンブルする該当箇所
 
 ```
 void HariMain(void)
@@ -33,7 +34,8 @@ void HariMain(void)
 }
 ```
 
-逆アセンブル結果(`./debug/bootpack.hrb.dasm`)
+
+### 逆アセンブル結果(`./debug/bootpack.hrb.dasm`)
 
 なお,16バイトアラインメントについては以下の記事参照
 
