@@ -52,7 +52,7 @@ void HariMain(void)
                                                                       # ===================================
                                                                       # === HariMain() に入るときの準備 ===
                                                                       # ===================================
-  30:	55                   	push   ebp                                # 現在のベースポインタ(dbp)の中身をスタックに保存(同時にespもdecrement)
+  30: 55                    push   ebp                                # 現在のベースポインタ(dbp)の中身をスタックに保存(同時にespもdecrement)
                                                                       # ESP : 0xffec <= 0xfff0 - 0x4
                                                                       # EBP : ???(前の処理で保存した値)
                                                                       #
@@ -67,7 +67,7 @@ void HariMain(void)
                                                                       # r16,r32で同じ命令になっている理由は「アドレスサイズ属性」に関係している.
                                                                       # > [アセンブリ言語 - オペランドサイズ、アドレスサイズとは？ 16bit演算を用意する意味は？ メモリサイズの制限とアドレスサイズの関係は？ - スタック・オーバーフロー](https://ja.stackoverflow.com/questions/39666/%E3%82%AA%E3%83%9A%E3%83%A9%E3%83%B3%E3%83%89%E3%82%B5%E3%82%A4%E3%82%BA-%E3%82%A2%E3%83%89%E3%83%AC%E3%82%B9%E3%82%B5%E3%82%A4%E3%82%BA%E3%81%A8%E3%81%AF-16bit%E6%BC%94%E7%AE%97%E3%82%92%E7%94%A8%E6%84%8F%E3%81%99%E3%82%8B%E6%84%8F%E5%91%B3%E3%81%AF-%E3%83%A1%E3%83%A2%E3%83%AA%E3%82%B5%E3%82%A4%E3%82%BA%E3%81%AE%E5%88%B6%E9%99%90%E3%81%A8%E3%82%A2%E3%83%89%E3%83%AC%E3%82%B9%E3%82%B5%E3%82%A4%E3%82%BA%E3%81%AE%E9%96%A2%E4%BF%82%E3%81%AF)
                                                                       #
-  31:	89 e5                	mov    ebp,esp                            # 現在のespの値をebpに保存
+  31: 89 e5                 mov    ebp,esp                            # 現在のespの値をebpに保存
                                                                       # ESP : 0xffec
                                                                       # EBP : 0xffec <= ESP
 
@@ -75,52 +75,52 @@ void HariMain(void)
                                                                       # === GCCによる16バイトアライメントとローカル変数の確保 ===
                                                                       # =========================================================
                                                                       #
-  33:	83 ec 18             	sub    esp,0x18                           # espを0x18=16+8=24だけdecrement
+  33: 83 ec 18              sub    esp,0x18                           # espを0x18=16+8=24だけdecrement
                                                                       # ESP : 0xffd4 <= 0xffec - 0x18 (下位の 4 Byte は call ret を考えれば戻り先アドレス用(4 Byte)である考えれば16バイトアライメントに即している))
                                                                       # EBP : 0xffec
                                                                       # * 16バイトアラインメント
                                                                       #
-  36:	c7 45 f4 00 00 0a 00 	mov    DWORD PTR [ebp-0xc],0xa0000        # HariMain()のローカル変数iに0xa0000を代入
+  36: c7 45 f4 00 00 0a 00  mov    DWORD PTR [ebp-0xc],0xa0000        # HariMain()のローカル変数iに0xa0000を代入
                                                                       # ebp-0xc : 0xffec - 0xc = 0xffe0
                                                                       # 0x33番地の命令で確保した 0x18=24 Byte分のうち上位 4 Byte 分を指している
                                                                       # <- 16バイト単位から 4 Byte ずれている
-  3d:	eb 13                	jmp    0x52                               # 0x52番地にjump
+  3d: eb 13                 jmp    0x52                               # 0x52番地にjump
                                                                       #
 # ======================================================================================================================
                                                                       # ===_write_mem8 の call ===
-  3f:	83 ec 08             	sub    esp,0x8                            #===================
+  3f: 83 ec 08              sub    esp,0x8                            #===================
                                                                       # ESP : 0xffcc <= 0xffd4 - 0x8 (このあとで2つの 4 Byte 引数と call ret でのリターンアドレス(4 Byte)のことを考えれば16バイトアライメントに即している)
                                                                       # EBP : 0xffec
                                                                       # <== 0x4c番地で0x10の倍数を足すことになっている(?)ためstackに無意味な枠を設けている?
                                                                       #    【解決】16バイトアラインメント
                                                                       #===================
-  42:	6a 0f                	push   0xf                                # _write_mem8(/* int addr= */ i, /* int data = */ 15);の第2引数をスタックに積み,espをdecrement
+  42: 6a 0f                 push   0xf                                # _write_mem8(/* int addr= */ i, /* int data = */ 15);の第2引数をスタックに積み,espをdecrement
                                                                       # ESP : 0xffc8 <= 0xffdc - 0x4
-  44:	ff 75 f4             	push   DWORD PTR [ebp-0xc]                # _write_mem8(/* int addr= */ i, /* int data = */ 15);の第1引数をスタックに積み,espをdecrement
+  44: ff 75 f4              push   DWORD PTR [ebp-0xc]                # _write_mem8(/* int addr= */ i, /* int data = */ 15);の第1引数をスタックに積み,espをdecrement
                                                                       # ESP : 0xffc4 <= 0xffd8 - 0x4
-  47:	e8 26 00 00 00       	call   0x72                               # _write_mem8(/* int addr= */ i, /* int data = */ 15)の戻り先アドレス
+  47: e8 26 00 00 00        call   0x72                               # _write_mem8(/* int addr= */ i, /* int data = */ 15)の戻り先アドレス
                                                                       # ESP : 0xffc0 <= 0xffd4 - 0x4(戻り先アドレス)
                                                                       # (ここでは0x4c番地の4バイト)をスタックに積み,0x72(プロシージャ)にjump.
-  4c:	83 c4 10             	add    esp,0x10                           #===================
+  4c: 83 c4 10              add    esp,0x10                           #===================
                                                                       # ESP : 0xffd4 <= 0xffc4 + 0x4
                                                                       # <== ここは 0x10, 0x20, ... 単位で足すことになっているみたい？ 0x3f番地ではそうなるように空白のstackを設けている. なぜなのか.
                                                                       #    【解決】16バイトアラインメント
                                                                       #===================
 # ======================================================================================================================
-  4f:	ff 45 f4             	inc    DWORD PTR [ebp-0xc]                # i++
-  52:	81 7d f4 ff ff 0a 00 	cmp    DWORD PTR [ebp-0xc],0xaffff        # forの条件判定部分
-  59:	7e e4                	jle    0x3f                               # if (i <= 0xaffff) then jump to 0x3f
-  5b:	e8 10 00 00 00       	call   0x70                               #
+  4f: ff 45 f4              inc    DWORD PTR [ebp-0xc]                # i++
+  52: 81 7d f4 ff ff 0a 00  cmp    DWORD PTR [ebp-0xc],0xaffff        # forの条件判定部分
+  59: 7e e4                 jle    0x3f                               # if (i <= 0xaffff) then jump to 0x3f
+  5b: e8 10 00 00 00        call   0x70                               #
   ...
   ...
 # ======================================================================================================================
-  70:	f4                   	hlt    
-  71:	c3                   	ret    
+  70: f4                    hlt    
+  71: c3                    ret    
 # ======================================================================================================================
-  72:	8b 4c 24 04          	mov    ecx,DWORD PTR [esp+0x4]
-  76:	8a 44 24 08          	mov    al,BYTE PTR [esp+0x8]
-  7a:	88 01                	mov    BYTE PTR [ecx],al
-  7c:	c3                   	ret                                       # callの時にスタックに積んだであろう値の指す戻り先アドレスにjumpし,スタックをincrementすると思われる.
+  72: 8b 4c 24 04           mov    ecx,DWORD PTR [esp+0x4]
+  76: 8a 44 24 08           mov    al,BYTE PTR [esp+0x8]
+  7a: 88 01                 mov    BYTE PTR [ecx],al
+  7c: c3                    ret                                       # callの時にスタックに積んだであろう値の指す戻り先アドレスにjumpし,スタックをincrementすると思われる.
                                                                       # ESP : 0xffc4 <= 0xffc0 + 0x4
 ```
 
