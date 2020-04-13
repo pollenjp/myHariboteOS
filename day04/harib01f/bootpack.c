@@ -12,6 +12,10 @@ void set_palette(int start, int end, unsigned char *rgb);
 void HariMain(void)
 {
   char *p;  // BYTE [...]用番地
+
+  init_palette();
+
+
   p = (char *) 0xa0000;
 
   for (int i=0; i <= 0xffff; i++){
